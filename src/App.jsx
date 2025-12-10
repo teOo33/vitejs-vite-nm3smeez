@@ -934,9 +934,9 @@ export default function App() {
                         key={row.id}
                         className={`border-b last:border-0 transition ${
                           row.flag === 'پیگیری فوری'
-                            ? 'bg-red-50/70'
+                            ? 'bg-red-100'
                             : row.flag === 'پیگیری مهم'
-                            ? 'bg-amber-50'
+                            ? 'bg-blue-50'
                             : 'hover:bg-slate-50'
                         }`}
                       >
