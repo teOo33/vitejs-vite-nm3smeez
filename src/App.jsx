@@ -48,8 +48,8 @@ const appPassword = import.meta.env.VITE_APP_PASSWORD || '';
 // =================================================================================
 const INITIAL_FORM_DATA = {
   username: '',
-  phone_number: '',       // ✨ فیلد جدید
-  instagram_username: '', // ✨ فیلد جدید
+  phone_number: '',
+  instagram_username: '',
   subscription_status: '',
   desc_text: '',
   module: '',
@@ -297,68 +297,31 @@ export default function App() {
   const handleSmartAnalysis = async () => {
     if (!formData.desc_text) return alert('لطفاً شرح مشکل را وارد کنید.');
     setAiLoading(true);
-
-    const prompt = `
-      Analyze this technical support issue in Persian: "${formData.desc_text}"
-      Return a JSON object with 3 keys:
-      "module": (Choose one best fit: "پرامپت", "ویزارد", "دایرکت هوشمند", "کامنت هوشمند", "اتصال تلگرام", "اتصال اینستاگرام", "اتصال وبسایت", "ویجت", "سایر")
-      "type": (Choose one best fit: "باگ فنی", "خطای کاربر", "کندی سیستم", "API", "طراحی UX", "سایر")
-      "note": (A very short 1-sentence technical solution in Persian)
-    `;
-
+    const prompt = `Analyze issue in Persian: "${formData.desc_text}". Return JSON: { "module": "...", "type": "...", "note": "..." }`;
     const res = await callGeminiAI(prompt, true);
     setAiLoading(false);
-
     if (res) {
       try {
         const parsed = JSON.parse(res);
-        setFormData((prev) => ({
-          ...prev,
-          module: parsed.module || prev.module || '',
-          type: parsed.type || prev.type || '',
-          technical_note: parsed.note || prev.technical_note || '',
-        }));
-      } catch (e) {
-        console.error('AI Parse Error', e);
-        alert('خطا در تحلیل هوشمند.');
-      }
+        setFormData((prev) => ({ ...prev, module: parsed.module || prev.module || '', type: parsed.type || prev.type || '', technical_note: parsed.note || prev.technical_note || '' }));
+      } catch (e) { alert('خطا در تحلیل هوشمند.'); }
     }
   };
 
   const handleRefundAI = async () => {
-    if (!formData.username && !formData.reason) {
-      alert('نام کاربری و دلیل بازگشت وجه را وارد کنید.');
-      return;
-    }
+    if (!formData.username && !formData.reason) return alert('اطلاعات ناقص است.');
     setAiLoading(true);
-    const res = await callGeminiAI(
-      `یک پیام کوتاه، رسمی و همدلانه به فارسی بنویس برای کاربر "${formData.username}" که درخواست بازگشت وجه داده به دلیل: "${formData.reason}". هدف: منصرف کردن محترمانه یا پذیرش درخواست.`,
-      false
-    );
+    const res = await callGeminiAI(`پیام محترمانه فارسی برای "${formData.username}" جهت بازگشت وجه به دلیل: "${formData.reason}"`, false);
     setAiLoading(false);
-    if (res)
-      setFormData((prev) => ({
-        ...prev,
-        suggestion: res.trim(),
-      }));
+    if (res) setFormData((prev) => ({ ...prev, suggestion: res.trim() }));
   };
 
   const handleFeatureAI = async () => {
-    if (!formData.desc_text) {
-      alert('شرح فیچر را وارد کنید.');
-      return;
-    }
+    if (!formData.desc_text) return alert('شرح فیچر ناقص است.');
     setAiLoading(true);
-    const res = await callGeminiAI(
-      `برای متن زیر یک عنوان بسیار کوتاه (حداکثر ۴ کلمه) به فارسی بساز: "${formData.desc_text}"`,
-      false
-    );
+    const res = await callGeminiAI(`عنوان کوتاه فارسی برای: "${formData.desc_text}"`, false);
     setAiLoading(false);
-    if (res)
-      setFormData((prev) => ({
-        ...prev,
-        title: res.trim(),
-      }));
+    if (res) setFormData((prev) => ({ ...prev, title: res.trim() }));
   };
 
   // -------------------- Save Form (Insert / Update) --------------------
@@ -367,14 +330,12 @@ export default function App() {
     const today = new Date().toLocaleDateString('fa-IR');
     const isEdit = !!editingId;
     let table = '';
-    // اضافه شدن phone_number و instagram_username به همه payload ها
     const commonFields = {
       username: formData.username,
       phone_number: formData.phone_number,
       instagram_username: formData.instagram_username,
       flag: formData.flag || null,
     };
-
     let payload = {};
 
     if (modalType === 'issue') {
@@ -384,7 +345,7 @@ export default function App() {
         desc_text: formData.desc_text,
         module: formData.module,
         type: formData.type,
-        status: formData.status || 'باز',
+        status: formData.status || 'باز', // پیش‌فرض: باز
         support: formData.support,
         subscription_status: formData.subscription_status,
         resolved_at: formData.resolved_at,
@@ -398,7 +359,7 @@ export default function App() {
         desc_text: formData.desc_text,
         module: formData.module,
         cause: formData.cause,
-        status: formData.status || 'فریز',
+        status: formData.status || 'فریز', // پیش‌فرض: فریز
         subscription_status: formData.subscription_status,
         first_frozen_at: formData.first_frozen_at,
         freeze_count: formData.freeze_count ? Number(formData.freeze_count) : null,
@@ -414,7 +375,7 @@ export default function App() {
         desc_text: formData.desc_text,
         title: formData.title,
         category: formData.category,
-        status: formData.status || 'بررسی نشده',
+        status: formData.status || 'بررسی نشده', // پیش‌فرض: بررسی نشده
         repeat_count: formData.repeat_count ? Number(formData.repeat_count) : null,
         importance: formData.importance ? Number(formData.importance) : null,
         internal_note: formData.internal_note,
@@ -427,7 +388,7 @@ export default function App() {
         reason: formData.reason,
         duration: formData.duration,
         category: formData.category,
-        action: formData.action || 'در بررسی',
+        action: formData.action || 'در حال بررسی', // پیش‌فرض: در حال بررسی
         suggestion: formData.suggestion,
         can_return: formData.can_return,
         sales_source: formData.sales_source,
@@ -436,18 +397,13 @@ export default function App() {
       if (!isEdit) payload.requested_at = today;
     }
 
-    if (!supabase) {
-      alert('دیتابیس متصل نیست.');
-      return;
-    }
-
+    if (!supabase) return alert('دیتابیس متصل نیست.');
     let error = null;
 
     if (isEdit) {
       const res = await supabase.from(table).update(payload).eq('id', editingId);
       error = res.error;
       if (!error) {
-        // آپدیت استیت لوکال
         const updater = (prev) => prev.map((r) => (r.id === editingId ? { ...r, ...payload } : r));
         if (table === 'issues') setIssues(updater);
         if (table === 'frozen') setFrozen(updater);
@@ -458,14 +414,8 @@ export default function App() {
       const res = await supabase.from(table).insert([payload]);
       error = res.error;
     }
-
-    if (error) {
-      alert('خطا در ذخیره دیتابیس (مطمئن شوید ستون‌های phone_number و instagram_username در جدول وجود دارند): ' + error.message);
-    } else {
-      setIsModalOpen(false);
-      setEditingId(null);
-      setFormData({ ...INITIAL_FORM_DATA });
-    }
+    if (error) alert('خطا: ' + error.message);
+    else { setIsModalOpen(false); setEditingId(null); setFormData({ ...INITIAL_FORM_DATA }); }
   };
 
   const openModal = (t, record = null) => {
@@ -480,26 +430,19 @@ export default function App() {
     setIsModalOpen(true);
   };
 
-  // -------------------- User Profile Component (Updated) --------------------
+  // -------------------- User Profile --------------------
   const UserProfile = () => {
     const [search, setSearch] = useState('');
     const [suggestions, setSuggestions] = useState([]);
     const [selectedUserStats, setSelectedUserStats] = useState(null);
 
-    // ساخت یک دیکشنری از کاربران برای جستجوی سریع و استخراج اطلاعات تماس
-    // userMap: { [username]: { phone, insta, lastSeen, username } }
     const userMap = useMemo(() => {
         const map = {};
         [...issues, ...frozen, ...features, ...refunds].forEach(r => {
             if (!r.username) return;
             if (!map[r.username]) {
-                map[r.username] = { 
-                    username: r.username, 
-                    phone: r.phone_number || '', 
-                    insta: r.instagram_username || '' 
-                };
+                map[r.username] = { username: r.username, phone: r.phone_number || '', insta: r.instagram_username || '' };
             } else {
-                // اگر رکوردهای جدیدتر اطلاعات تماس دارند، آپدیت کن
                 if (r.phone_number) map[r.username].phone = r.phone_number;
                 if (r.instagram_username) map[r.username].insta = r.instagram_username;
             }
@@ -510,274 +453,96 @@ export default function App() {
     const handleSearch = (val) => {
       setSearch(val);
       if (val) {
-        // جستجو در نام کاربری، شماره تلفن یا اینستاگرام
         const lowerVal = val.toLowerCase();
-        const matches = Object.values(userMap).filter(u => 
-            u.username.toLowerCase().includes(lowerVal) ||
-            (u.phone && u.phone.includes(lowerVal)) ||
-            (u.insta && u.insta.toLowerCase().includes(lowerVal))
-        );
-        setSuggestions(matches);
-      } else {
-        setSuggestions([]);
-      }
+        setSuggestions(Object.values(userMap).filter(u => u.username.toLowerCase().includes(lowerVal) || (u.phone && u.phone.includes(lowerVal)) || (u.insta && u.insta.toLowerCase().includes(lowerVal))));
+      } else { setSuggestions([]); }
     };
 
-    // وقتی یک کاربر انتخاب شد یا دقیق سرچ شد، اطلاعات تماسش را پیدا کن
     useEffect(() => {
-        if(userMap[search]) {
-            setSelectedUserStats(userMap[search]);
-        } else {
-            setSelectedUserStats(null);
-        }
+        if(userMap[search]) setSelectedUserStats(userMap[search]);
+        else setSelectedUserStats(null);
     }, [search, userMap]);
 
-    const allRecords = [
-      ...issues.map((x) => ({ ...x, src: 'issue', date: x.created_at })),
-      ...frozen.map((x) => ({ ...x, src: 'frozen', date: x.frozen_at })),
-      ...features.map((x) => ({ ...x, src: 'feature', date: x.created_at })),
-      ...refunds.map((x) => ({ ...x, src: 'refund', date: x.requested_at })),
-    ].filter((r) => r.username === search);
-    
-    // مرتب سازی بر اساس تاریخ (جدیدترین بالا)
-    // اینجا فرض ساده بر استرینگ بودن تاریخ است، برای دقیقتر باید parse شود
-    allRecords.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+    const allRecords = [...issues.map(x=>({...x,src:'issue',date:x.created_at})),...frozen.map(x=>({...x,src:'frozen',date:x.frozen_at})),...features.map(x=>({...x,src:'feature',date:x.created_at})),...refunds.map(x=>({...x,src:'refund',date:x.requested_at}))].filter(r=>r.username===search);
+    allRecords.sort((a,b) => (b.date||'').localeCompare(a.date||''));
 
     return (
       <div className="w-full max-w-5xl ml-auto">
-        {/* جعبه جستجو */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 relative z-20">
           <h2 className="font-semibold text-gray-800 mb-2">پروفایل کاربر</h2>
-          <p className="text-xs text-gray-500 mb-3">
-            جستجو بر اساس نام کاربری، شماره تماس یا آیدی اینستاگرام.
-          </p>
           <div className="relative">
-            <div className="flex items-center border border-gray-200 rounded-xl bg-gray-50 focus-within:ring-1 focus-within:ring-blue-200 focus-within:border-blue-500 transition overflow-hidden">
-                <div className="pl-3 pr-4 text-gray-400">
-                    <Search size={18}/>
-                </div>
-                <input
-                placeholder="جستجو..."
-                value={search}
-                className="w-full p-3 bg-transparent outline-none text-sm"
-                onChange={(e) => handleSearch(e.target.value)}
-                />
-            </div>
-            
+            <div className="flex items-center border border-gray-200 rounded-xl bg-gray-50 overflow-hidden"><div className="pl-3 pr-4 text-gray-400"><Search size={18}/></div><input placeholder="جستجو (نام، تلفن، اینستاگرام)..." value={search} className="w-full p-3 bg-transparent outline-none text-sm" onChange={(e) => handleSearch(e.target.value)} /></div>
             {suggestions.length > 0 && (
               <div className="absolute top-full right-0 left-0 bg-white shadow-xl rounded-xl mt-1 max-h-60 overflow-auto border border-gray-100 z-50 text-right">
                 {suggestions.map((u) => (
-                  <div
-                    key={u.username}
-                    onClick={() => {
-                      setSearch(u.username);
-                      setSuggestions([]);
-                    }}
-                    className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 text-sm flex flex-col"
-                  >
-                    <span className="font-semibold text-gray-700">{u.username}</span>
-                    <div className="flex gap-3 text-xs text-gray-400 mt-1">
-                        {u.phone && <span>📞 {u.phone}</span>}
-                        {u.insta && <span>📸 {u.insta}</span>}
-                    </div>
-                  </div>
+                  <div key={u.username} onClick={() => { setSearch(u.username); setSuggestions([]); }} className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 text-sm flex flex-col"><span className="font-semibold text-gray-700">{u.username}</span><div className="flex gap-3 text-xs text-gray-400 mt-1">{u.phone && <span>📞 {u.phone}</span>}{u.insta && <span>📸 {u.insta}</span>}</div></div>
                 ))}
               </div>
             )}
           </div>
         </div>
-
-        {/* هدر پروفایل (اطلاعات تماس) */}
         {selectedUserStats && (
             <div className="bg-gradient-to-l from-blue-50 to-white p-6 rounded-2xl shadow-sm border border-blue-100 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 animate-fade-in">
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-inner">
-                    <User size={32} />
-                </div>
+                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-inner"><User size={32} /></div>
                 <div className="flex-1 text-center sm:text-right">
                     <h2 className="text-xl font-bold text-gray-800 mb-2">{selectedUserStats.username}</h2>
                     <div className="flex flex-wrap justify-center sm:justify-start gap-3">
-                        {selectedUserStats.phone ? (
-                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-gray-200 text-sm text-gray-600 shadow-sm">
-                                <Phone size={14} className="text-emerald-500"/>
-                                {selectedUserStats.phone}
-                            </span>
-                        ) : (
-                            <span className="text-xs text-gray-400 py-1.5">بدون شماره تماس</span>
-                        )}
-                        
-                        {selectedUserStats.insta ? (
-                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-gray-200 text-sm text-gray-600 shadow-sm dir-ltr">
-                                <Instagram size={14} className="text-rose-500"/>
-                                {selectedUserStats.insta}@
-                            </span>
-                        ) : (
-                            <span className="text-xs text-gray-400 py-1.5">بدون اینستاگرام</span>
-                        )}
+                        {selectedUserStats.phone && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-gray-200 text-sm text-gray-600 shadow-sm"><Phone size={14} className="text-emerald-500"/>{selectedUserStats.phone}</span>}
+                        {selectedUserStats.insta && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-gray-200 text-sm text-gray-600 shadow-sm dir-ltr"><Instagram size={14} className="text-rose-500"/>{selectedUserStats.insta}@</span>}
                     </div>
                 </div>
             </div>
         )}
-
-        {/* تایملاین */}
         {search && allRecords.length > 0 ? (
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h3 className="font-semibold text-sm text-slate-800 mb-4 flex items-center gap-2">
-              تاریخچه فعالیت‌ها
-            </h3>
-
+            <h3 className="font-semibold text-sm text-slate-800 mb-4">تاریخچه فعالیت‌ها</h3>
             <div className="relative pr-6">
-              {/* خط تایملاین */}
               <div className="absolute top-2 bottom-2 right-2 w-px bg-slate-200" />
-
               <div className="space-y-5">
                 {allRecords.map((r, i) => (
                   <div key={i} className="relative flex gap-4 items-start">
-                    {/* نقطه تایملاین */}
                     <div className="absolute right-0 top-3 w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow" />
-
                     <div className="mr-6 flex-1 bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:bg-white hover:shadow-sm transition">
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                           <span>{r.date}</span>
-                          <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[10px]">
-                            {r.src === 'issue'
-                              ? 'مشکل فنی'
-                              : r.src === 'frozen'
-                              ? 'اکانت فریز'
-                              : r.src === 'feature'
-                              ? 'درخواست فیچر'
-                              : 'بازگشت وجه'}
-                          </span>
-                          {r.flag && (
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] border ${
-                                r.flag === 'پیگیری فوری'
-                                  ? 'bg-red-50 text-red-700 border-red-200'
-                                  : 'bg-amber-50 text-amber-700 border-amber-200'
-                              }`}
-                            >
-                              {r.flag}
-                            </span>
-                          )}
+                          <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[10px]">{r.src === 'issue' ? 'مشکل فنی' : r.src === 'frozen' ? 'اکانت فریز' : r.src === 'feature' ? 'درخواست فیچر' : 'بازگشت وجه'}</span>
+                          {r.flag && <span className={`px-2 py-0.5 rounded-full text-[10px] border ${r.flag === 'پیگیری فوری' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{r.flag}</span>}
                         </div>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            openModal(
-                              r.src === 'issue'
-                                ? 'issue'
-                                : r.src === 'frozen'
-                                ? 'frozen'
-                                : r.src === 'feature'
-                                ? 'feature'
-                                : 'refund',
-                              r
-                            )
-                          }
-                          className="text-[11px] px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 bg-white text-slate-700"
-                        >
-                          ویرایش
-                        </button>
+                        <button type="button" onClick={() => openModal(r.src === 'issue' ? 'issue' : r.src === 'frozen' ? 'frozen' : r.src === 'feature' ? 'feature' : 'refund', r)} className="text-[11px] px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 bg-white text-slate-700">ویرایش</button>
                       </div>
-
-                      <div className="font-semibold text-sm text-slate-800 mb-1">
-                        {r.desc_text || r.reason || r.title}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-500">
-                        <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200">
-                          وضعیت: {r.status || r.action || 'نامشخص'}
-                        </span>
-                        {/* نمایش اطلاعات تماس در هر کارت اگر متفاوت باشد */}
-                        {(r.phone_number && r.phone_number !== selectedUserStats?.phone) && (
-                            <span className="text-[10px] text-gray-400">📞 {r.phone_number}</span>
-                        )}
-                      </div>
+                      <div className="font-semibold text-sm text-slate-800 mb-1">{r.desc_text || r.reason || r.title}</div>
+                      <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-500"><span className="px-2 py-0.5 rounded-full bg-white border border-slate-200">وضعیت: {r.status || r.action || 'نامشخص'}</span></div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        ) : (
-          search && (
-            <div className="text-center text-gray-400 text-sm mt-4">
-              سابقه‌ای برای این کاربر یافت نشد.
-            </div>
-          )
-        )}
+        ) : search && <div className="text-center text-gray-400 text-sm mt-4">سابقه‌ای یافت نشد.</div>}
       </div>
     );
   };
 
-  // =================================================================================
-  // 🔐 Login Gate
-  // =================================================================================
-  if (appPassword && !isAuthed) {
-    return (
-      <div className="fixed inset-0 w-full h-full grid place-items-center bg-gradient-to-l from-slate-100 via-slate-50 to-white" dir="rtl">
-        <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md border border-slate-100 relative overflow-hidden mx-4">
-          <div className="absolute -left-10 -top-10 w-32 h-32 bg-blue-100 rounded-full opacity-40 blur-xl" />
-          <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-sky-100 rounded-full opacity-40 blur-xl" />
-          <div className="relative">
-            <h1 className="text-xl font-extrabold mb-3 text-center text-slate-800">ورود به داشبورد پشتیبانی وردست</h1>
-            <p className="text-xs text-slate-500 mb-6 text-center leading-relaxed">لطفاً رمز عبور داخلی تیم را وارد کنید.</p>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <input type="password" className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500 bg-slate-50/60" placeholder="رمز عبور" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} />
-              {loginError && <div className="text-xs text-red-500 text-center">{loginError}</div>}
-              <button type="submit" className="w-full bg-gradient-to-l from-blue-600 to-sky-500 text-white rounded-xl py-2.5 text-sm font-bold shadow-md">ورود</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (appPassword && !isAuthed) return <div className="fixed inset-0 w-full h-full grid place-items-center bg-gradient-to-l from-slate-100 via-slate-50 to-white" dir="rtl"><div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md border border-slate-100 relative overflow-hidden mx-4"><h1 className="text-xl font-extrabold mb-3 text-center text-slate-800">ورود به داشبورد پشتیبانی</h1><form onSubmit={handleLogin} className="space-y-4"><input type="password" className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500 bg-slate-50/60" placeholder="رمز عبور" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} />{loginError && <div className="text-xs text-red-500 text-center">{loginError}</div>}<button type="submit" className="w-full bg-gradient-to-l from-blue-600 to-sky-500 text-white rounded-xl py-2.5 text-sm font-bold shadow-md">ورود</button></form></div></div>;
 
-  // =================================================================================
-  // 🖥️ Render Layout اصلی
-  // =================================================================================
   return (
     <div className="fixed inset-0 w-full h-full bg-gradient-to-l from-slate-100 via-slate-50 to-white text-right font-sans flex overflow-hidden" dir="rtl">
       {isSidebarOpen && <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/40 z-30 md:hidden backdrop-blur-sm transition-opacity" />}
-      
       <aside className={`fixed inset-y-0 right-0 z-40 h-full bg-white/95 border-l border-slate-100 flex flex-col transition-transform duration-300 shadow-lg backdrop-blur md:relative ${isSidebarOpen ? 'translate-x-0 w-64' : 'translate-x-full md:translate-x-0 md:w-20'}`}>
         <div className="p-4 flex items-center justify-between border-b border-slate-100">
-           <div className={`${isSidebarOpen ? 'block' : 'hidden md:hidden'} flex flex-col`}>
-              <span className="font-extrabold text-blue-700 text-lg leading-none">وردست</span>
-              <span className="text-[10px] text-slate-400 mt-1">داشبورد تیم پشتیبانی</span>
-            </div>
-            <div className={`hidden md:flex flex-col ${!isSidebarOpen && 'md:hidden'}`}>
-             <span className="font-extrabold text-blue-700 text-lg leading-none">وردست</span>
-          </div>
-          <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-slate-50 rounded-xl border border-slate-100 mr-auto">
-             {isSidebarOpen ? <X size={20} className="md:hidden"/> : <Menu size={20} />}
-             <Menu size={20} className="hidden md:block"/>
-          </button>
+           <div className={`${isSidebarOpen ? 'block' : 'hidden md:hidden'} flex flex-col`}><span className="font-extrabold text-blue-700 text-lg leading-none">وردست</span><span className="text-[10px] text-slate-400 mt-1">داشبورد تیم پشتیبانی</span></div>
+           <div className={`hidden md:flex flex-col ${!isSidebarOpen && 'md:hidden'}`}><span className="font-extrabold text-blue-700 text-lg leading-none">وردست</span></div>
+          <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-slate-50 rounded-xl border border-slate-100 mr-auto">{isSidebarOpen ? <X size={20} className="md:hidden"/> : <Menu size={20} />}<Menu size={20} className="hidden md:block"/></button>
         </div>
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {[{ id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard }, { id: 'issues', label: 'مشکلات فنی', icon: AlertTriangle }, { id: 'frozen', label: 'اکانت فریز', icon: Snowflake }, { id: 'features', label: 'درخواست فیچر', icon: Lightbulb }, { id: 'refunds', label: 'بازگشت وجه', icon: CreditCard }, { id: 'profile', label: 'پروفایل کاربر', icon: User }].map((i) => (
-            <button key={i.id} onClick={() => { setActiveTab(i.id); if(window.innerWidth < 768) setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all whitespace-nowrap overflow-hidden ${activeTab === i.id ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100' : 'text-slate-600 hover:bg-slate-50'}`}>
-              <i.icon size={18} className="shrink-0" />
-              <span className={`${!isSidebarOpen && 'md:hidden'} transition-opacity duration-200`}>{i.label}</span>
-            </button>
-          ))}
-        </nav>
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">{[{ id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard }, { id: 'issues', label: 'مشکلات فنی', icon: AlertTriangle }, { id: 'frozen', label: 'اکانت فریز', icon: Snowflake }, { id: 'features', label: 'درخواست فیچر', icon: Lightbulb }, { id: 'refunds', label: 'بازگشت وجه', icon: CreditCard }, { id: 'profile', label: 'پروفایل کاربر', icon: User }].map((i) => (<button key={i.id} onClick={() => { setActiveTab(i.id); if(window.innerWidth < 768) setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all whitespace-nowrap overflow-hidden ${activeTab === i.id ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100' : 'text-slate-600 hover:bg-slate-50'}`}><i.icon size={18} className="shrink-0" /><span className={`${!isSidebarOpen && 'md:hidden'} transition-opacity duration-200`}>{i.label}</span></button>))}</nav>
         <div className="p-4 text-xs text-center text-gray-400 border-t bg-slate-50/80">{isConnected ? <span className="text-emerald-600 flex justify-center gap-1 font-bold items-center"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /><span className={`${!isSidebarOpen && 'md:hidden'}`}>متصل</span></span> : 'Off'}</div>
       </aside>
 
       <main className="flex-1 w-full h-full overflow-y-auto overflow-x-hidden px-4 sm:px-8 lg:px-10 py-6">
         <header className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-             <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-600"><Menu size={20} /></button>
-            <div className="flex flex-col gap-1">
-              <h1 className="text-lg sm:text-2xl font-extrabold text-slate-800">داشبورد پشتیبانی</h1>
-              <p className="hidden sm:block text-xs sm:text-sm text-slate-500">مدیریت متمرکز مشکلات فنی، فریز، فیچرها و بازگشت وجه.</p>
-            </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400">
-            <span className="px-2 py-1 rounded-full bg-white border border-slate-100 shadow-sm">امروز {new Date().toLocaleDateString('fa-IR', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
-          </div>
+          <div className="flex items-center gap-3"><button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-600"><Menu size={20} /></button><div className="flex flex-col gap-1"><h1 className="text-lg sm:text-2xl font-extrabold text-slate-800">داشبورد پشتیبانی</h1></div></div>
+          <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400"><span className="px-2 py-1 rounded-full bg-white border border-slate-100 shadow-sm">امروز {new Date().toLocaleDateString('fa-IR', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' })}</span></div>
         </header>
 
         {activeTab === 'dashboard' && (
@@ -785,12 +550,12 @@ export default function App() {
              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
               <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition"><span className="text-xs text-gray-500">نرخ حل مشکلات</span><div className="flex items-end gap-2"><h3 className="text-2xl sm:text-3xl font-extrabold text-emerald-600">%{analytics.solvedRatio}</h3><span className="text-[10px] sm:text-[11px] text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">بسته شده</span></div></div>
               <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition"><span className="text-xs text-gray-500">اکانت‌های فریز</span><h3 className="text-2xl sm:text-3xl font-extrabold text-blue-600">{analytics.activeFrozen}</h3></div>
-              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition"><span className="text-xs text-gray-500">تعداد بازگشت وجه</span><h3 className="text-2xl sm:text-3xl font-extrabold text-rose-500">{analytics.refundCount}</h3></div>
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition"><span className="text-xs text-gray-500">بازگشت وجه</span><h3 className="text-2xl sm:text-3xl font-extrabold text-rose-500">{analytics.refundCount}</h3></div>
               <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition"><span className="text-xs text-gray-500">کل تیکت‌ها</span><h3 className="text-2xl sm:text-3xl font-extrabold text-slate-800">{issues.length}</h3></div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 min-h-[280px]">
-              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[300px]"><div className="flex items-center justify-between mb-4"><h4 className="font-bold text-gray-700 text-sm">روند ثبت مشکلات</h4></div><div className="flex-1 w-full h-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><XAxis dataKey="date" tick={{ fontSize: 10 }} /><Tooltip /><Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer></div></div>
-              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[300px]"><div className="flex items-center justify-between mb-4"><h4 className="font-bold text-gray-700 text-sm">دلایل بازگشت وجه</h4></div><div className="flex-1 w-full h-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieChartData} dataKey="value" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5}>{pieChartData.map((e, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}</Pie><Tooltip /><Legend wrapperStyle={{ fontSize: '11px' }} /></PieChart></ResponsiveContainer></div></div>
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[300px]"><h4 className="font-bold text-gray-700 text-sm mb-4">روند ثبت مشکلات</h4><div className="flex-1 w-full h-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><XAxis dataKey="date" tick={{ fontSize: 10 }} /><Tooltip /><Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer></div></div>
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[300px]"><h4 className="font-bold text-gray-700 text-sm mb-4">دلایل بازگشت وجه</h4><div className="flex-1 w-full h-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieChartData} dataKey="value" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5}>{pieChartData.map((e, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}</Pie><Tooltip /><Legend wrapperStyle={{ fontSize: '11px' }} /></PieChart></ResponsiveContainer></div></div>
             </div>
           </section>
         )}
@@ -801,12 +566,9 @@ export default function App() {
           <section className="mt-4">
             <div className="bg-white/95 rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 min-h-[60vh]">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
-                <div className="flex flex-col gap-1">
-                  <h2 className="font-bold text-lg text-gray-800">{activeTab === 'issues' ? 'لیست مشکلات فنی' : activeTab === 'frozen' ? 'لیست اکانت‌های فریز' : activeTab === 'features' ? 'درخواست‌های فیچر' : 'درخواست‌های بازگشت وجه'}</h2>
-                  <p className="text-[10px] sm:text-[11px] text-slate-500">مدیریت و ویرایش ردیف‌ها</p>
-                </div>
+                <div className="flex flex-col gap-1"><h2 className="font-bold text-lg text-gray-800">{activeTab === 'issues' ? 'مشکلات فنی' : activeTab === 'frozen' ? 'اکانت فریز' : activeTab === 'features' ? 'درخواست فیچر' : 'بازگشت وجه'}</h2><p className="text-[10px] sm:text-[11px] text-slate-500">مدیریت ردیف‌ها</p></div>
                 <div className="flex gap-2 w-full md:w-auto">
-                  <button onClick={() => downloadCSV(activeTab === 'issues' ? issues : activeTab === 'frozen' ? frozen : activeTab === 'features' ? features : refunds, activeTab)} className="flex-1 md:flex-none justify-center border border-gray-200 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-gray-50 transition bg-white"><Download size={16} /> <span className="hidden sm:inline">خروجی اکسل</span></button>
+                  <button onClick={() => downloadCSV(activeTab === 'issues' ? issues : activeTab === 'frozen' ? frozen : activeTab === 'features' ? features : refunds, activeTab)} className="flex-1 md:flex-none justify-center border border-gray-200 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-gray-50 transition bg-white"><Download size={16} /><span className="hidden sm:inline">خروجی</span></button>
                   <button onClick={() => openModal(activeTab === 'issues' ? 'issue' : activeTab === 'frozen' ? 'frozen' : activeTab === 'features' ? 'feature' : 'refund')} className="flex-1 md:flex-none justify-center bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-blue-700 shadow-md shadow-blue-200 transition"><Plus size={16} /> ثبت جدید</button>
                 </div>
               </div>
@@ -819,7 +581,7 @@ export default function App() {
                         <td className="p-3 text-gray-500 text-xs whitespace-nowrap">{row.created_at || row.frozen_at || row.requested_at}</td>
                         <td className="p-3 font-semibold text-gray-800 text-xs sm:text-sm whitespace-nowrap">{row.username}</td>
                         <td className="p-3 max-w-[150px] sm:max-w-md truncate text-gray-600 text-xs sm:text-sm" title={row.desc_text || row.reason || row.title}>{row.desc_text || row.reason || row.title}</td>
-                        <td className="p-3 text-xs sm:text-sm"><span className={`px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-medium whitespace-nowrap ${row.status === 'حل‌شده' || row.status === 'انجام شد' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>{row.status || row.action}</span></td>
+                        <td className="p-3 text-xs sm:text-sm"><span className={`px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-medium whitespace-nowrap ${row.status === 'حل‌شده' || row.status === 'انجام شد' || row.action === 'بازپرداخت شد' || row.status === 'رفع شد' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>{row.status || row.action}</span></td>
                         <td className="p-3 text-left text-xs sm:text-sm"><button type="button" onClick={() => openModal(activeTab === 'issues' ? 'issue' : activeTab === 'frozen' ? 'frozen' : activeTab === 'features' ? 'feature' : 'refund', row)} className="text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 transition bg-white whitespace-nowrap">ویرایش</button></td>
                       </tr>
                     ))}
@@ -831,7 +593,6 @@ export default function App() {
         )}
       </main>
 
-      {/* مودال */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-50 p-4">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all border border-slate-100 max-h-[90vh] flex flex-col">
@@ -840,70 +601,56 @@ export default function App() {
               <button onClick={() => { setIsModalOpen(false); setEditingId(null); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-4 overflow-y-auto grow">
-              {/* فیلد مشترک: نام کاربری */}
-              <div className="space-y-1">
-                <label className="text-xs text-gray-500">نام کاربری</label>
-                <input required value={formData.username || ''} onChange={(e) => setFormData({ ...formData, username: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-slate-50/60 text-sm" />
-              </div>
-              
-              {/* ====================================
-                  ✨ فیلدهای جدید: شماره و اینستاگرام
-                  ==================================== */}
+              <div className="space-y-1"><label className="text-xs text-gray-500">نام کاربری</label><input required value={formData.username || ''} onChange={(e) => setFormData({ ...formData, username: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-slate-50/60 text-sm" /></div>
               <div className="grid grid-cols-2 gap-3">
-                 <div className="space-y-1">
-                    <label className="text-xs text-gray-500">شماره تماس</label>
-                    <input placeholder="0912..." value={formData.phone_number || ''} onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-white text-sm" />
-                 </div>
-                 <div className="space-y-1">
-                    <label className="text-xs text-gray-500">یوزرنیم اینستاگرام</label>
-                    <input placeholder="bedoon @" value={formData.instagram_username || ''} onChange={(e) => setFormData({ ...formData, instagram_username: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-white text-sm" />
-                 </div>
+                 <div className="space-y-1"><label className="text-xs text-gray-500">شماره تماس</label><input placeholder="0912..." value={formData.phone_number || ''} onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-white text-sm" /></div>
+                 <div className="space-y-1"><label className="text-xs text-gray-500">یوزرنیم اینستاگرام</label><input placeholder="bedoon @" value={formData.instagram_username || ''} onChange={(e) => setFormData({ ...formData, instagram_username: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-white text-sm" /></div>
               </div>
               <div className="border-b border-gray-100 my-2"></div>
 
-              {/* ادامه فرم بر اساس نوع مودال (کد قبلی) */}
               {modalType === 'issue' && (
                 <>
-                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-xs text-gray-500">وضعیت اشتراک</label>
-                      <select value={formData.subscription_status || ''} onChange={(e) => setFormData({ ...formData, subscription_status: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none">
-                        <option value="">انتخاب...</option><option value="Active">Active</option><option value="Paused">Paused</option><option value="Expired">Expired</option><option value="Trial">Trial</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1"><label className="text-xs text-gray-500">پشتیبان مسئول</label><input value={formData.support || ''} onChange={(e) => setFormData({ ...formData, support: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" /></div>
-                  </div>
-                  <div className="relative space-y-1"><label className="text-xs text-gray-500">شرح مشکل</label><textarea rows="3" value={formData.desc_text || ''} onChange={(e) => setFormData({ ...formData, desc_text: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-white text-sm"></textarea><button type="button" onClick={handleSmartAnalysis} className="absolute bottom-3 left-3 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] px-3 py-1.5 rounded-lg flex gap-1 items-center border border-purple-100 transition">{aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}تحلیل هوشمند</button></div>
-                  {/* ...بقیه فیلدهای issue... */}
-                  <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><label className="text-xs text-gray-500">ماژول</label><select value={formData.module || ''} onChange={(e) => setFormData({ ...formData, module: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"><option value="">انتخاب...</option><option value="پرامپت">پرامپت</option><option value="ویزارد">ویزارد</option><option value="دایرکت هوشمند">دایرکت هوشمند</option><option value="سایر">سایر</option></select></div><div className="space-y-1"><label className="text-xs text-gray-500">نوع مشکل</label><select value={formData.type || ''} onChange={(e) => setFormData({ ...formData, type: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"><option value="">انتخاب...</option><option value="باگ فنی">باگ فنی</option><option value="خطای کاربر">خطای کاربر</option><option value="سایر">سایر</option></select></div></div>
+                  <div className="space-y-1"><label className="text-xs text-gray-500">وضعیت</label>
+                  <select value={formData.status || 'باز'} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none">
+                      <option value="باز">باز</option><option value="در حال بررسی">در حال بررسی</option><option value="حل‌شده">حل‌شده</option>
+                  </select></div>
+                  <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><label className="text-xs text-gray-500">وضعیت اشتراک</label><select value={formData.subscription_status || ''} onChange={(e) => setFormData({ ...formData, subscription_status: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"><option value="">انتخاب...</option><option value="Active">Active</option><option value="Paused">Paused</option><option value="Expired">Expired</option></select></div><div className="space-y-1"><label className="text-xs text-gray-500">پشتیبان مسئول</label><input value={formData.support || ''} onChange={(e) => setFormData({ ...formData, support: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" /></div></div>
+                  <div className="relative space-y-1"><label className="text-xs text-gray-500">شرح مشکل</label><textarea rows="3" value={formData.desc_text || ''} onChange={(e) => setFormData({ ...formData, desc_text: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-white text-sm"></textarea><button type="button" onClick={handleSmartAnalysis} className="absolute bottom-3 left-3 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] px-3 py-1.5 rounded-lg flex gap-1 items-center border border-purple-100 transition">{aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}تحلیل</button></div>
                   <div className="space-y-1"><label className="text-xs text-gray-500">یادداشت فنی</label><textarea rows="2" value={formData.technical_note || ''} onChange={(e) => setFormData({ ...formData, technical_note: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"></textarea></div>
                 </>
               )}
               {modalType === 'frozen' && (
                 <div className="space-y-3">
+                  <div className="space-y-1"><label className="text-xs text-gray-500">وضعیت</label>
+                  <select value={formData.status || 'فریز'} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none">
+                      <option value="فریز">فریز</option><option value="در حال رفع">در حال رفع</option><option value="رفع شد">رفع شد</option>
+                  </select></div>
                   <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><label className="text-xs text-gray-500">ماژول</label><input value={formData.module || ''} onChange={(e) => setFormData({ ...formData, module: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" /></div><div className="space-y-1"><label className="text-xs text-gray-500">علت</label><input value={formData.cause || ''} onChange={(e) => setFormData({ ...formData, cause: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" /></div></div>
                   <textarea placeholder="توضیحات تکمیلی..." value={formData.desc_text || ''} onChange={(e) => setFormData({...formData, desc_text: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" />
                 </div>
               )}
                {modalType === 'feature' && (
                 <div className="space-y-3">
+                  <div className="space-y-1"><label className="text-xs text-gray-500">وضعیت</label>
+                  <select value={formData.status || 'بررسی نشده'} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none">
+                      <option value="بررسی نشده">بررسی نشده</option><option value="در تحلیل">در تحلیل</option><option value="در توسعه">در توسعه</option><option value="انجام شد">انجام شد</option>
+                  </select></div>
                   <input placeholder="عنوان فیچر" value={formData.title || ''} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" />
                   <textarea placeholder="شرح..." value={formData.desc_text || ''} onChange={(e) => setFormData({...formData, desc_text: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" />
                 </div>
               )}
                {modalType === 'refund' && (
                 <div className="space-y-3">
+                  <div className="space-y-1"><label className="text-xs text-gray-500">وضعیت</label>
+                  <select value={formData.action || 'در حال بررسی'} onChange={(e) => setFormData({...formData, action: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none">
+                      <option value="در حال بررسی">در حال بررسی</option><option value="بازپرداخت شد">بازپرداخت شد</option><option value="رد شد">رد شد</option>
+                  </select></div>
                   <textarea placeholder="دلیل..." rows="3" value={formData.reason || ''} onChange={(e) => setFormData({...formData, reason: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" />
-                   <button type="button" onClick={handleRefundAI} className="bg-purple-50 text-purple-600 text-[11px] w-full py-2 rounded-xl flex justify-center gap-1 items-center border border-purple-100"><Sparkles size={14} /> پیشنهاد متن پاسخ</button>
+                   <button type="button" onClick={handleRefundAI} className="bg-purple-50 text-purple-600 text-[11px] w-full py-2 rounded-xl flex justify-center gap-1 items-center border border-purple-100"><Sparkles size={14} /> پیشنهاد متن</button>
                    {formData.suggestion && <div className="text-[11px] bg-purple-50 p-3 rounded-xl border border-purple-100 text-purple-800">{formData.suggestion}</div>}
                 </div>
               )}
-
-              <div className="space-y-1 mt-4">
-                  <label className="text-xs text-gray-500">فلگ گزارش</label>
-                  <select value={formData.flag || ''} onChange={(e) => setFormData({ ...formData, flag: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"><option value="">بدون فلگ</option><option value="پیگیری مهم">پیگیری مهم</option><option value="پیگیری فوری">پیگیری فوری</option></select>
-              </div>
-
+              <div className="space-y-1 mt-4"><label className="text-xs text-gray-500">فلگ گزارش</label><select value={formData.flag || ''} onChange={(e) => setFormData({ ...formData, flag: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"><option value="">بدون فلگ</option><option value="پیگیری مهم">پیگیری مهم</option><option value="پیگیری فوری">پیگیری فوری</option></select></div>
               <button type="submit" className="w-full bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-md shadow-blue-200 mt-2 text-sm">ذخیره اطلاعات</button>
             </form>
           </div>
