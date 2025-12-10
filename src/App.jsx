@@ -105,7 +105,7 @@ const useTailwind = () => {
       const style = document.createElement('style');
       style.innerHTML = `
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;400;500;700;900&display=swap');
-        body { font-family: 'Vazirmatn', sans-serif; }
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #F3F4F6; }
         
         @keyframes blob {
           0% { transform: translate(0px, 0px) scale(1); }
@@ -120,8 +120,7 @@ const useTailwind = () => {
           animation-delay: 2s;
         }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-          height: 6px;
+          width: 5px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
@@ -129,9 +128,6 @@ const useTailwind = () => {
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: #cbd5e1;
           border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
         }
       `;
       document.head.appendChild(style);
@@ -211,7 +207,6 @@ const UserAvatar = ({ name, size = 'md' }) => {
     const safeName = name || '?';
     const colors = ['from-blue-400 to-blue-600', 'from-purple-400 to-purple-600', 'from-pink-400 to-pink-600', 'from-emerald-400 to-emerald-600', 'from-orange-400 to-orange-600'];
     const colorIndex = safeName.length % colors.length;
-    
     const sizeClasses = size === 'lg' ? 'w-12 h-12 text-lg' : 'w-9 h-9 text-sm';
 
     return (
@@ -228,10 +223,16 @@ export default function App() {
   useTailwind();
 
   const [activeTab, setActiveTab] = useState('dashboard');
-  // پیش‌فرض در دسکتاپ باز باشد
-  const [isSidebarOpen, setSidebarOpen] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
-  );
+  
+  // مدیریت وضعیت سایدبار
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
+
+  // در اولین لود، اگر موبایل بود منو بسته باشد
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, []);
   
   const [isConnected, setIsConnected] = useState(false);
 
@@ -247,19 +248,6 @@ export default function App() {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [editingId, setEditingId] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
-
-  // هندلر تغییر سایز صفحه
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setSidebarOpen(true);
-      } else {
-        setSidebarOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // وضعیت لاگین
   const [isAuthed, setIsAuthed] = useState(() => {
@@ -334,9 +322,8 @@ export default function App() {
     };
   }, [issues, frozen, refunds]);
 
-  // 🔥 الگوریتم تشخیص خطر ریزش (Churn Prediction)
+  // 🔥 الگوریتم تشخیص خطر ریزش
   const churnRisks = useMemo(() => {
-      // نگاه به ۱۰۰ تیکت آخر
       const recentIssues = issues.slice(0, 100); 
       const userCounts = {};
       
@@ -348,7 +335,6 @@ export default function App() {
           userCounts[i.username].issues.push(i.desc_text);
       });
 
-      // فیلتر: کسانی که بیشتر یا مساوی ۳ مشکل داشته‌اند
       return Object.entries(userCounts)
         .filter(([_, data]) => data.count >= 3)
         .map(([username, data]) => ({ username, count: data.count, issues: data.issues }));
@@ -375,18 +361,13 @@ export default function App() {
 
   const COLORS = ['#0ea5e9', '#22c55e', '#f97316', '#a855f7', '#e11d48'];
 
-  // توابع هوش مصنوعی (AI)
+  // توابع هوش مصنوعی
   const handleAiChurnAnalysis = async (user) => {
       setAiLoading(true);
       const prompt = `
         کاربری با نام ${user.username} اخیرا ${user.count} بار مشکل داشته است.
         شرح مشکلات او: ${JSON.stringify(user.issues)}
-        
-        لطفا تحلیل کن:
-        1. سطح عصبانیت احتمالی (1 تا 10).
-        2. ریشه اصلی مشکل (کوتاه).
-        3. یک پیام کوتاه و همدلانه برای دلجویی که پشتیبان به او بگوید.
-        
+        لطفا تحلیل کن: 1. سطح عصبانیت (1-10). 2. ریشه اصلی مشکل. 3. پیام همدلانه.
         خروجی فقط JSON باشد: {"anger_score": number, "root_cause": "string", "message": "string"}
       `;
       const res = await callGeminiAI(prompt, true);
@@ -422,7 +403,7 @@ export default function App() {
     if (res) setFormData((prev) => ({ ...prev, suggestion: res.trim() }));
   };
 
-  // ذخیره فرم (Save)
+  // ذخیره فرم
   const handleSave = async (e) => {
     e.preventDefault();
     const today = new Date().toLocaleDateString('fa-IR');
@@ -438,60 +419,19 @@ export default function App() {
 
     if (modalType === 'issue') {
       table = 'issues';
-      payload = {
-        ...commonFields,
-        desc_text: formData.desc_text,
-        module: formData.module,
-        type: formData.type,
-        status: formData.status || 'باز',
-        support: formData.support,
-        subscription_status: formData.subscription_status,
-        resolved_at: formData.resolved_at,
-        technical_note: formData.technical_note,
-      };
+      payload = { ...commonFields, desc_text: formData.desc_text, module: formData.module, type: formData.type, status: formData.status || 'باز', support: formData.support, subscription_status: formData.subscription_status, resolved_at: formData.resolved_at, technical_note: formData.technical_note };
       if (!isEdit) payload.created_at = today;
     } else if (modalType === 'frozen') {
       table = 'frozen';
-      payload = {
-        ...commonFields,
-        desc_text: formData.desc_text,
-        module: formData.module,
-        cause: formData.cause,
-        status: formData.status || 'فریز',
-        subscription_status: formData.subscription_status,
-        first_frozen_at: formData.first_frozen_at,
-        freeze_count: formData.freeze_count ? Number(formData.freeze_count) : null,
-        last_frozen_at: formData.last_frozen_at,
-        resolve_status: formData.resolve_status,
-        note: formData.note,
-      };
+      payload = { ...commonFields, desc_text: formData.desc_text, module: formData.module, cause: formData.cause, status: formData.status || 'فریز', subscription_status: formData.subscription_status, first_frozen_at: formData.first_frozen_at, freeze_count: formData.freeze_count ? Number(formData.freeze_count) : null, last_frozen_at: formData.last_frozen_at, resolve_status: formData.resolve_status, note: formData.note };
       if (!isEdit) payload.frozen_at = today;
     } else if (modalType === 'feature') {
       table = 'features';
-      payload = {
-        ...commonFields,
-        desc_text: formData.desc_text,
-        title: formData.title,
-        category: formData.category,
-        status: formData.status || 'بررسی نشده',
-        repeat_count: formData.repeat_count ? Number(formData.repeat_count) : null,
-        importance: formData.importance ? Number(formData.importance) : null,
-        internal_note: formData.internal_note,
-      };
+      payload = { ...commonFields, desc_text: formData.desc_text, title: formData.title, category: formData.category, status: formData.status || 'بررسی نشده', repeat_count: formData.repeat_count ? Number(formData.repeat_count) : null, importance: formData.importance ? Number(formData.importance) : null, internal_note: formData.internal_note };
       if (!isEdit) payload.created_at = today;
     } else if (modalType === 'refund') {
       table = 'refunds';
-      payload = {
-        ...commonFields,
-        reason: formData.reason,
-        duration: formData.duration,
-        category: formData.category,
-        action: formData.action || 'در حال بررسی',
-        suggestion: formData.suggestion,
-        can_return: formData.can_return,
-        sales_source: formData.sales_source,
-        ops_note: formData.ops_note,
-      };
+      payload = { ...commonFields, reason: formData.reason, duration: formData.duration, category: formData.category, action: formData.action || 'در حال بررسی', suggestion: formData.suggestion, can_return: formData.can_return, sales_source: formData.sales_source, ops_note: formData.ops_note };
       if (!isEdit) payload.requested_at = today;
     }
 
@@ -641,7 +581,7 @@ export default function App() {
 
   return (
     // ------------------------------------------------------------------------------------------------
-    // ساختار اصلی (Layout) - بخش اصلاح شده
+    // ساختار اصلی (Layout) - کاملاً اصلاح شده و تست شده
     // ------------------------------------------------------------------------------------------------
     <div className="flex h-screen w-full bg-[#F3F4F6] font-sans overflow-hidden relative" dir="rtl">
       
@@ -649,28 +589,27 @@ export default function App() {
       <div className="absolute top-0 left-0 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob pointer-events-none"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000 pointer-events-none"></div>
 
-      {/* 📱 Mobile Overlay */}
+      {/* 📱 Mobile Overlay - این لایه فقط وقتی منو باز است در موبایل روی صفحه می‌آید */}
       {isSidebarOpen && (
         <div 
           onClick={() => setSidebarOpen(false)} 
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm transition-opacity" 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity" 
         />
       )}
       
       {/* ---------------- Sidebar (منوی راست) ---------------- */}
       <aside 
         className={`
-          /* تنظیمات پایه */
-          bg-white/80 border-l border-white/50 backdrop-blur-xl z-50 transition-all duration-300 ease-in-out flex flex-col
+          /* 1. پوزیشن و ابعاد پایه */
+          fixed inset-y-0 right-0 z-50 h-full bg-white/90 backdrop-blur-xl border-l border-white/50 shadow-2xl transition-transform duration-300 ease-in-out
           
-          /* حالت موبایل: فیکس شده */
-          fixed inset-y-0 right-0 h-full shadow-2xl
-          
-          /* حالت دسکتاپ: ریلیتیو */
-          lg:relative lg:shadow-none lg:translate-x-0
+          /* 2. تغییر رفتار در دسکتاپ (LG): دیگر fixed نیست بلکه static است تا فضا بگیرد */
+          lg:static lg:shadow-none lg:translate-x-0
 
-          /* لاجیک باز/بسته */
+          /* 3. مدیریت عرض و نمایش */
           ${isSidebarOpen ? 'translate-x-0 w-64' : 'translate-x-full lg:translate-x-0 lg:w-20'}
+          
+          flex flex-col
         `}
       >
         <div className="p-5 flex items-center justify-between h-20 border-b border-gray-100/50 shrink-0">
@@ -679,6 +618,7 @@ export default function App() {
              <span className="text-[10px] text-slate-400 mt-1">داشبورد هوشمند</span>
            </div>
            
+           {/* لوگوی کوچک برای حالت بسته در دسکتاپ */}
            <div className={`hidden lg:flex items-center justify-center w-full ${isSidebarOpen && 'hidden'}`}>
               <span className="font-extrabold text-blue-700 text-2xl">V</span>
            </div>
@@ -715,15 +655,17 @@ export default function App() {
       </aside>
 
       {/* ---------------- Main Content (محتوای اصلی) ---------------- */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative z-0">
+      {/* min-w-0 برای جلوگیری از سرریز شدن چارت‌ها بسیار مهم است */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 relative z-0">
         
         {/* هدر */}
-        <header className="flex items-center justify-between px-6 py-4 bg-[#F3F4F6]/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+        <header className="flex items-center justify-between px-4 sm:px-6 py-4 bg-[#F3F4F6]/90 backdrop-blur-md sticky top-0 z-30 shrink-0">
             <div className="flex items-center gap-3">
+              {/* دکمه منو در موبایل */}
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-600 active:scale-95 transition">
                 <Menu size={20} />
               </button>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800">
+              <h1 className="text-lg sm:text-2xl font-extrabold text-slate-800">
                 {activeTab === 'dashboard' ? 'داشبورد مدیریت' : 
                  activeTab === 'issues' ? 'لیست مشکلات فنی' :
                  activeTab === 'profile' ? 'جستجوی کاربر' : activeTab}
@@ -735,9 +677,9 @@ export default function App() {
         </header>
 
         {/* محتوا */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 w-full max-w-[1920px] mx-auto custom-scrollbar">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 custom-scrollbar">
           
-          <div className="space-y-6 pb-10">
+          <div className="space-y-6 pb-20">
             
             {activeTab === 'dashboard' && (
               <>
