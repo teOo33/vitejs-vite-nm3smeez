@@ -13,7 +13,6 @@ import {
   CreditCard,
   Plus,
   X,
-  CheckCircle,
   Menu,
   User,
   Sparkles,
@@ -165,6 +164,7 @@ export default function App() {
   useTailwind();
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  // وضعیت سایدبار: در دسکتاپ پیش‌فرض باز، در موبایل بسته
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -179,10 +179,25 @@ export default function App() {
   const [editingId, setEditingId] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
 
+  // ---------- ریسپانسیو کردن استیت اولیه سایدبار ----------
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+    // تنظیم اولیه
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // ---------- login state ----------
   const [isAuthed, setIsAuthed] = useState(() => {
     if (typeof window === 'undefined') return false;
-    if (!appPassword) return true; // اگر پسورد تعریف نشده، لاگین لازم نیست
+    if (!appPassword) return true;
     return localStorage.getItem('vardast_ops_authed') === '1';
   });
   const [passwordInput, setPasswordInput] = useState('');
@@ -682,7 +697,7 @@ export default function App() {
         className="min-h-screen w-full flex items-center justify-center bg-gradient-to-l from-slate-100 via-slate-50 to-white"
         dir="rtl"
       >
-        <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md border border-slate-100 relative overflow-hidden">
+        <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md border border-slate-100 relative overflow-hidden mx-4">
           <div className="absolute -left-10 -top-10 w-32 h-32 bg-blue-100 rounded-full opacity-40 blur-xl" />
           <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-sky-100 rounded-full opacity-40 blur-xl" />
           <div className="relative">
@@ -731,13 +746,34 @@ export default function App() {
       className="w-full h-screen bg-gradient-to-l from-slate-100 via-slate-50 to-white text-right font-sans flex overflow-hidden"
       dir="rtl"
     >
-      {/* سایدبار */}
+      {/* ==========================
+        📱 MOBILE OVERLAY (Backdrop)
+        زمانی که سایدبار در موبایل باز است، این لایه سیاه نمایش داده می‌شود
+        ==========================
+      */}
+      {isSidebarOpen && (
+        <div 
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/40 z-30 md:hidden backdrop-blur-sm transition-opacity"
+        />
+      )}
+
+      {/* ==========================
+        SIDEBAR
+        در موبایل: Fixed و روی صفحه (Drawer)
+        در دسکتاپ: Relative و کنار صفحه
+        ==========================
+      */}
       <aside
-        className={`${
-          isSidebarOpen ? 'w-64' : 'w-20'
-        } h-full bg-white/95 border-l border-slate-100 flex flex-col transition-all duration-300 shadow-lg z-20 backdrop-blur`}
+        className={`
+          fixed inset-y-0 right-0 z-40 h-full bg-white/95 border-l border-slate-100 
+          flex flex-col transition-all duration-300 shadow-lg backdrop-blur
+          md:relative md:translate-x-0
+          ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-64 translate-x-full md:w-20 md:translate-x-0'}
+        `}
       >
         <div className="p-4 flex items-center justify-between border-b border-slate-100">
+          {/* لوگو - فقط وقتی سایدبار کامل باز است */}
           {isSidebarOpen && (
             <div className="flex flex-col">
               <span className="font-extrabold text-blue-700 text-lg leading-none">
@@ -748,13 +784,21 @@ export default function App() {
               </span>
             </div>
           )}
+          {/* دکمه بستن سایدبار در موبایل / تغییر سایز در دسکتاپ */}
           <button
             onClick={() => setSidebarOpen(!isSidebarOpen)}
             className="p-2 hover:bg-slate-50 rounded-xl border border-slate-100"
           >
-            <Menu size={20} />
+            {/* در موبایل آیکون ضربدر، در دسکتاپ آیکون منو */}
+            <div className="md:hidden">
+              <X size={20} />
+            </div>
+            <div className="hidden md:block">
+               <Menu size={20} />
+            </div>
           </button>
         </div>
+
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {[
             { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard },
@@ -766,7 +810,11 @@ export default function App() {
           ].map((i) => (
             <button
               key={i.id}
-              onClick={() => setActiveTab(i.id)}
+              onClick={() => {
+                 setActiveTab(i.id);
+                 // در موبایل بعد از کلیک منو بسته شود
+                 if(window.innerWidth < 768) setSidebarOpen(false);
+              }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
                 activeTab === i.id
                   ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100'
@@ -774,6 +822,7 @@ export default function App() {
               }`}
             >
               <i.icon size={18} />
+              {/* متن منو فقط زمانی که سایدبار باز است نمایش داده شود */}
               {isSidebarOpen && <span>{i.label}</span>}
             </button>
           ))}
@@ -782,27 +831,37 @@ export default function App() {
           {isConnected ? (
             <span className="text-emerald-600 flex justify-center gap-1 font-bold items-center">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              متصل
+              {isSidebarOpen ? 'متصل' : ''}
             </span>
           ) : (
-            'آفلاین'
+            isSidebarOpen ? 'آفلاین' : 'Off'
           )}
         </div>
       </aside>
 
       {/* محتوای اصلی */}
-      <main className="flex-1 h-full overflow-y-auto px-5 sm:px-8 lg:px-10 py-6">
+      <main className="flex-1 h-full overflow-y-auto px-4 sm:px-8 lg:px-10 py-6 w-full">
         {/* هدر بالای صفحه */}
         <header className="flex items-center justify-between mb-6">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800">
-              داشبورد پشتیبانی وردست
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
-              مدیریت متمرکز مشکلات فنی، فریز، فیچر ریکوئست‌ها و بازگشت وجه در یک
-              نگاه.
-            </p>
+          <div className="flex items-center gap-3">
+             {/* دکمه منوی موبایل (فقط در موبایل دیده می‌شود) */}
+             <button 
+               onClick={() => setSidebarOpen(true)}
+               className="md:hidden p-2 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-600"
+             >
+                <Menu size={20} />
+             </button>
+
+            <div className="flex flex-col gap-1">
+              <h1 className="text-lg sm:text-2xl font-extrabold text-slate-800">
+                داشبورد پشتیبانی
+              </h1>
+              <p className="hidden sm:block text-xs sm:text-sm text-slate-500">
+                مدیریت متمرکز مشکلات فنی، فریز، فیچرها و بازگشت وجه.
+              </p>
+            </div>
           </div>
+          
           <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400">
             <span className="px-2 py-1 rounded-full bg-white border border-slate-100 shadow-sm">
               امروز{' '}
@@ -819,48 +878,48 @@ export default function App() {
         {/* محتوا بر اساس تب */}
         {activeTab === 'dashboard' && (
           <section className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
                 <span className="text-xs text-gray-500">نرخ حل مشکلات</span>
                 <div className="flex items-end gap-2">
-                  <h3 className="text-3xl font-extrabold text-emerald-600">
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-emerald-600">
                     %{analytics.solvedRatio}
                   </h3>
-                  <span className="text-[11px] text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                    تیکت بسته شده
+                  <span className="text-[10px] sm:text-[11px] text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                    بسته شده
                   </span>
                 </div>
               </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
                 <span className="text-xs text-gray-500">
-                  اکانت‌های فریز فعال
+                  اکانت‌های فریز
                 </span>
-                <h3 className="text-3xl font-extrabold text-blue-600">
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-blue-600">
                   {analytics.activeFrozen}
                 </h3>
               </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
                 <span className="text-xs text-gray-500">تعداد بازگشت وجه</span>
-                <h3 className="text-3xl font-extrabold text-rose-500">
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-rose-500">
                   {analytics.refundCount}
                 </h3>
               </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
                 <span className="text-xs text-gray-500">کل تیکت‌ها</span>
-                <h3 className="text-3xl font-extrabold text-slate-800">
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-800">
                   {issues.length}
                 </h3>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 min-h-[280px]">
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-bold text-gray-700 text-sm">
                     روند ثبت مشکلات
                   </h4>
                 </div>
-                <div className="flex-1 min-h-[220px]">
+                <div className="flex-1 min-h-[200px] sm:min-h-[220px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
                       <XAxis dataKey="date" tick={{ fontSize: 10 }} />
@@ -876,13 +935,13 @@ export default function App() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+              <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-bold text-gray-700 text-sm">
                     دلایل بازگشت وجه
                   </h4>
                 </div>
-                <div className="flex-1 min-h-[220px]">
+                <div className="flex-1 min-h-[200px] sm:min-h-[220px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -891,7 +950,7 @@ export default function App() {
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
-                        outerRadius={90}
+                        outerRadius={80}
                         paddingAngle={5}
                       >
                         {pieChartData.map((e, i) => (
@@ -899,7 +958,7 @@ export default function App() {
                         ))}
                       </Pie>
                       <Tooltip />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: '11px' }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -912,8 +971,8 @@ export default function App() {
 
         {['issues', 'frozen', 'features', 'refunds'].includes(activeTab) && (
           <section className="mt-4">
-            <div className="bg-white/95 rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 min-h-[60vh]">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+            <div className="bg-white/95 rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 min-h-[60vh]">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
                 <div className="flex flex-col gap-1">
                   <h2 className="font-bold text-lg text-gray-800">
                     {activeTab === 'issues'
@@ -924,12 +983,11 @@ export default function App() {
                       ? 'درخواست‌های فیچر'
                       : 'درخواست‌های بازگشت وجه'}
                   </h2>
-                  <p className="text-[11px] text-slate-500">
-                    ردیف‌ها را می‌توانید ویرایش کنید و با فلگ‌گذاری، موارد مهم را
-                    برجسته نگه دارید.
+                  <p className="text-[10px] sm:text-[11px] text-slate-500">
+                    مدیریت و ویرایش ردیف‌ها
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full md:w-auto">
                   <button
                     onClick={() =>
                       downloadCSV(
@@ -943,9 +1001,9 @@ export default function App() {
                         activeTab
                       )
                     }
-                    className="border border-gray-200 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-gray-50 transition bg-white"
+                    className="flex-1 md:flex-none justify-center border border-gray-200 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-gray-50 transition bg-white"
                   >
-                    <Download size={16} /> خروجی اکسل
+                    <Download size={16} /> <span className="hidden sm:inline">خروجی اکسل</span>
                   </button>
                   <button
                     onClick={() =>
@@ -959,21 +1017,26 @@ export default function App() {
                           : 'refund'
                       )
                     }
-                    className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-blue-700 shadow-md shadow-blue-200 transition"
+                    className="flex-1 md:flex-none justify-center bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-blue-700 shadow-md shadow-blue-200 transition"
                   >
                     <Plus size={16} /> ثبت جدید
                   </button>
                 </div>
               </div>
+
+              {/* ===========================
+                TABLE RESPONSIVE WRAPPER
+                ===========================
+              */}
               <div className="overflow-x-auto rounded-2xl border border-gray-100">
-                <table className="w-full text-sm text-right">
+                <table className="w-full text-sm text-right min-w-[600px]">
                   <thead className="bg-slate-50 text-gray-600 border-b">
                     <tr>
-                      <th className="p-3 sm:p-4">تاریخ</th>
-                      <th className="p-3 sm:p-4">کاربر</th>
-                      <th className="p-3 sm:p-4">توضیحات</th>
-                      <th className="p-3 sm:p-4">وضعیت</th>
-                      <th className="p-3 sm:p-4">اقدام</th>
+                      <th className="p-3">تاریخ</th>
+                      <th className="p-3">کاربر</th>
+                      <th className="p-3">توضیحات</th>
+                      <th className="p-3">وضعیت</th>
+                      <th className="p-3">اقدام</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
@@ -995,21 +1058,21 @@ export default function App() {
                             : 'hover:bg-slate-50'
                         }`}
                       >
-                        <td className="p-3 sm:p-4 text-gray-500 text-xs sm:text-sm whitespace-nowrap">
+                        <td className="p-3 text-gray-500 text-xs whitespace-nowrap">
                           {row.created_at || row.frozen_at || row.requested_at}
                         </td>
-                        <td className="p-3 sm:p-4 font-semibold text-gray-800 text-xs sm:text-sm whitespace-nowrap">
+                        <td className="p-3 font-semibold text-gray-800 text-xs sm:text-sm whitespace-nowrap">
                           {row.username}
                         </td>
                         <td
-                          className="p-3 sm:p-4 max-w-md truncate text-gray-600 text-xs sm:text-sm"
+                          className="p-3 max-w-[150px] sm:max-w-md truncate text-gray-600 text-xs sm:text-sm"
                           title={row.desc_text || row.reason || row.title}
                         >
                           {row.desc_text || row.reason || row.title}
                         </td>
-                        <td className="p-3 sm:p-4 text-xs sm:text-sm">
+                        <td className="p-3 text-xs sm:text-sm">
                           <span
-                            className={`px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap ${
+                            className={`px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-medium whitespace-nowrap ${
                               row.status === 'حل‌شده' ||
                               row.status === 'انجام شد'
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
@@ -1019,7 +1082,7 @@ export default function App() {
                             {row.status || row.action}
                           </span>
                         </td>
-                        <td className="p-3 sm:p-4 text-left text-xs sm:text-sm">
+                        <td className="p-3 text-left text-xs sm:text-sm">
                           <button
                             type="button"
                             onClick={() =>
@@ -1034,7 +1097,7 @@ export default function App() {
                                 row
                               )
                             }
-                            className="text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 transition bg-white"
+                            className="text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 transition bg-white whitespace-nowrap"
                           >
                             ویرایش
                           </button>
@@ -1070,8 +1133,8 @@ export default function App() {
       {/* مودال */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-50 p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all border border-slate-100">
-            <div className="p-4 sm:p-5 border-b bg-slate-50 flex justify-between items-center">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all border border-slate-100 max-h-[90vh] flex flex-col">
+            <div className="p-4 sm:p-5 border-b bg-slate-50 flex justify-between items-center shrink-0">
               <h3 className="font-bold text-sm sm:text-base text-gray-800">
                 {editingId ? 'ویرایش گزارش' : 'ثبت مورد جدید'}
               </h3>
@@ -1088,7 +1151,7 @@ export default function App() {
 
             <form
               onSubmit={handleSave}
-              className="p-4 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto"
+              className="p-4 sm:p-6 space-y-4 overflow-y-auto grow"
             >
               {/* فیلد مشترک: نام کاربری */}
               <div className="space-y-1">
@@ -1244,7 +1307,7 @@ export default function App() {
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs text-gray-500">
-                        تاریخ حل (در صورت وجود)
+                        تاریخ حل
                       </label>
                       <input
                         placeholder="مثلاً 1404/08/25"
@@ -1353,11 +1416,11 @@ export default function App() {
 
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-500">
-                        تاریخ اولین فریز
+                      <label className="text-[10px] text-gray-500">
+                        اولین فریز
                       </label>
                       <input
-                        placeholder="مثلاً 1404/08/10"
+                        placeholder="1404/08/10"
                         value={formData.first_frozen_at || ''}
                         onChange={(e) =>
                           setFormData({
@@ -1365,12 +1428,12 @@ export default function App() {
                             first_frozen_at: e.target.value,
                           })
                         }
-                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
+                        className="w-full border border-slate-200 p-2 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-500">
-                        تعداد فریز
+                      <label className="text-[10px] text-gray-500">
+                        تعداد
                       </label>
                       <input
                         type="number"
@@ -1381,15 +1444,15 @@ export default function App() {
                             freeze_count: e.target.value,
                           })
                         }
-                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
+                        className="w-full border border-slate-200 p-2 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-500">
-                        آخرین تاریخ فریز
+                      <label className="text-[10px] text-gray-500">
+                        آخرین فریز
                       </label>
                       <input
-                        placeholder="مثلاً 1404/08/21"
+                        placeholder="1404/08/21"
                         value={formData.last_frozen_at || ''}
                         onChange={(e) =>
                           setFormData({
@@ -1397,7 +1460,7 @@ export default function App() {
                             last_frozen_at: e.target.value,
                           })
                         }
-                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
+                        className="w-full border border-slate-200 p-2 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                   </div>
@@ -1607,7 +1670,7 @@ export default function App() {
                     onClick={handleRefundAI}
                     className="bg-purple-50 text-purple-600 text-[11px] w-full py-2 rounded-xl flex justify-center gap-1 items-center border border-purple-100"
                   >
-                    <Sparkles size={14} /> پیشنهاد متن پاسخ به کاربر
+                    <Sparkles size={14} /> پیشنهاد متن پاسخ
                   </button>
 
                   {formData.suggestion && (
@@ -1617,7 +1680,7 @@ export default function App() {
                   )}
 
                   <input
-                    placeholder="مدت استفاده قبل از درخواست (مثلاً ۷ روز)"
+                    placeholder="مدت استفاده (مثلاً ۷ روز)"
                     value={formData.duration || ''}
                     onChange={(e) =>
                       setFormData({
@@ -1671,7 +1734,7 @@ export default function App() {
                         منبع فروش
                       </label>
                       <input
-                        placeholder="مثلاً پیج، سایت، تماس تلفنی..."
+                        placeholder="پیج، سایت..."
                         value={formData.sales_source || ''}
                         onChange={(e) =>
                           setFormData({
@@ -1684,7 +1747,7 @@ export default function App() {
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs text-gray-500">
-                        قابلیت بازگشت در آینده
+                        بازگشت در آینده
                       </label>
                       <select
                         value={formData.can_return || ''}
@@ -1705,7 +1768,7 @@ export default function App() {
 
                   <div className="space-y-1">
                     <label className="text-xs text-gray-500">
-                      پیشنهاد اصلاحی از دید ساپورت
+                      پیشنهاد اصلاحی
                     </label>
                     <textarea
                       rows="2"
@@ -1739,8 +1802,7 @@ export default function App() {
                   <option value="پیگیری فوری">پیگیری فوری</option>
                 </select>
                 <p className="text-[10px] text-gray-400">
-                  از فلگ برای علامت‌گذاری تیکت‌های حساس یا نیازمند پیگیری مجدد
-                  استفاده کنید. رنگ ردیف‌ها در لیست بر این اساس تغییر می‌کند.
+                  از فلگ برای علامت‌گذاری تیکت‌های حساس استفاده کنید.
                 </p>
               </div>
 
