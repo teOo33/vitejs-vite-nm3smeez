@@ -42,6 +42,40 @@ const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const appPassword = import.meta.env.VITE_APP_PASSWORD || '';
 
 // =================================================================================
+// 📋 فرم اولیه داده‌ها
+// =================================================================================
+const INITIAL_FORM_DATA = {
+  username: '',
+  subscription_status: '',
+  desc_text: '',
+  module: '',
+  type: '',
+  status: '',
+  support: '',
+  resolved_at: '',
+  technical_note: '',
+  cause: '',
+  first_frozen_at: '',
+  freeze_count: '',
+  last_frozen_at: '',
+  resolve_status: '',
+  note: '',
+  title: '',
+  category: '',
+  repeat_count: '',
+  importance: '',
+  internal_note: '',
+  reason: '',
+  duration: '',
+  action: '',
+  suggestion: '',
+  can_return: '',
+  sales_source: '',
+  ops_note: '',
+  flag: '',
+};
+
+// =================================================================================
 // 🎨 Tailwind از CDN
 // =================================================================================
 const useTailwind = () => {
@@ -141,7 +175,8 @@ export default function App() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState(null);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+  const [editingId, setEditingId] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
 
   // ---------- login state ----------
@@ -254,7 +289,7 @@ export default function App() {
     return Object.keys(acc).map((name) => ({ name, value: acc[name] }));
   }, [refunds]);
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  const COLORS = ['#0ea5e9', '#22c55e', '#f97316', '#a855f7', '#e11d48'];
 
   // -------------------- AI Helpers --------------------
   const handleSmartAnalysis = async () => {
@@ -324,21 +359,18 @@ export default function App() {
       }));
   };
 
-  // -------------------- Save Form --------------------
+  // -------------------- Save Form (Insert / Update) --------------------
   const handleSave = async (e) => {
     e.preventDefault();
     const today = new Date().toLocaleDateString('fa-IR');
+    const isEdit = !!editingId;
     let table = '';
     let payload = {};
 
     if (modalType === 'issue') {
-      // جدول issues:
-      // username, created_at, desc_text, module, type, status, support,
-      // subscription_status, resolved_at, technical_note, flag
       table = 'issues';
       payload = {
         username: formData.username,
-        created_at: today,
         desc_text: formData.desc_text,
         module: formData.module,
         type: formData.type,
@@ -349,15 +381,13 @@ export default function App() {
         technical_note: formData.technical_note,
         flag: formData.flag || null,
       };
+      if (!isEdit) {
+        payload.created_at = today;
+      }
     } else if (modalType === 'frozen') {
-      // جدول frozen:
-      // username, frozen_at, desc_text, module, cause, status,
-      // subscription_status, first_frozen_at, freeze_count, last_frozen_at,
-      // resolve_status, note, flag
       table = 'frozen';
       payload = {
         username: formData.username,
-        frozen_at: today,
         desc_text: formData.desc_text,
         module: formData.module,
         cause: formData.cause,
@@ -372,14 +402,13 @@ export default function App() {
         note: formData.note,
         flag: formData.flag || null,
       };
+      if (!isEdit) {
+        payload.frozen_at = today;
+      }
     } else if (modalType === 'feature') {
-      // جدول features:
-      // username, created_at, desc_text, title, category, status,
-      // repeat_count, importance, internal_note, flag
       table = 'features';
       payload = {
         username: formData.username,
-        created_at: today,
         desc_text: formData.desc_text,
         title: formData.title,
         category: formData.category,
@@ -393,14 +422,13 @@ export default function App() {
         internal_note: formData.internal_note,
         flag: formData.flag || null,
       };
+      if (!isEdit) {
+        payload.created_at = today;
+      }
     } else if (modalType === 'refund') {
-      // جدول refunds:
-      // username, requested_at, reason, duration, category, action,
-      // suggestion, can_return, sales_source, ops_note, flag
       table = 'refunds';
       payload = {
         username: formData.username,
-        requested_at: today,
         reason: formData.reason,
         duration: formData.duration,
         category: formData.category,
@@ -411,52 +439,72 @@ export default function App() {
         ops_note: formData.ops_note,
         flag: formData.flag || null,
       };
+      if (!isEdit) {
+        payload.requested_at = today;
+      }
     }
 
-    if (supabase) {
-      const { error } = await supabase.from(table).insert([payload]);
-      if (error) {
-        alert('خطا در ذخیره دیتابیس: ' + error.message);
-      } else {
-        setIsModalOpen(false);
+    if (!supabase) {
+      alert('دیتابیس متصل نیست.');
+      return;
+    }
+
+    let error = null;
+
+    if (isEdit) {
+      const res = await supabase
+        .from(table)
+        .update(payload)
+        .eq('id', editingId);
+      error = res.error;
+
+      if (!error) {
+        if (table === 'issues') {
+          setIssues((prev) =>
+            prev.map((r) => (r.id === editingId ? { ...r, ...payload } : r))
+          );
+        } else if (table === 'frozen') {
+          setFrozen((prev) =>
+            prev.map((r) => (r.id === editingId ? { ...r, ...payload } : r))
+          );
+        } else if (table === 'features') {
+          setFeatures((prev) =>
+            prev.map((r) => (r.id === editingId ? { ...r, ...payload } : r))
+          );
+        } else if (table === 'refunds') {
+          setRefunds((prev) =>
+            prev.map((r) => (r.id === editingId ? { ...r, ...payload } : r))
+          );
+        }
       }
     } else {
-      alert('دیتابیس متصل نیست.');
+      const res = await supabase.from(table).insert([payload]);
+      error = res.error;
+    }
+
+    if (error) {
+      alert('خطا در ذخیره دیتابیس: ' + error.message);
+    } else {
+      setIsModalOpen(false);
+      setEditingId(null);
+      setFormData({ ...INITIAL_FORM_DATA });
     }
   };
 
-  const openModal = (t) => {
+  const openModal = (t, record = null) => {
     setModalType(t);
-    setFormData({
-      username: '',
-      subscription_status: '',
-      desc_text: '',
-      module: '',
-      type: '',
-      status: '',
-      support: '',
-      resolved_at: '',
-      technical_note: '',
-      cause: '',
-      first_frozen_at: '',
-      freeze_count: '',
-      last_frozen_at: '',
-      resolve_status: '',
-      note: '',
-      title: '',
-      category: '',
-      repeat_count: '',
-      importance: '',
-      internal_note: '',
-      reason: '',
-      duration: '',
-      action: '',
-      suggestion: '',
-      can_return: '',
-      sales_source: '',
-      ops_note: '',
-      flag: '',
-    });
+
+    if (record) {
+      setEditingId(record.id);
+      setFormData({
+        ...INITIAL_FORM_DATA,
+        ...record,
+      });
+    } else {
+      setEditingId(null);
+      setFormData({ ...INITIAL_FORM_DATA });
+    }
+
     setIsModalOpen(true);
   };
 
@@ -493,62 +541,77 @@ export default function App() {
     ].filter((r) => r.username === search);
 
     return (
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white p-6 rounded-xl shadow-sm mb-6 text-center relative">
-          <input
-            placeholder="جستجوی نام کاربری..."
-            value={search}
-            className="border p-3 rounded-xl w-1/2 text-center outline-none focus:border-blue-500"
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-          {suggestions.length > 0 && (
-            <div className="absolute top-full left-1/4 right-1/4 bg-white shadow-xl rounded-xl mt-1 max-h-48 overflow-auto border border-gray-100 z-50 text-right">
-              {suggestions.map((u) => (
-                <div
-                  key={u}
-                  onClick={() => {
-                    setSearch(u);
-                    setSuggestions([]);
-                  }}
-                  className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0"
-                >
-                  {u}
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="w-full">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 max-w-xl ml-auto">
+          <h2 className="font-semibold text-gray-800 mb-3">پروفایل کاربر</h2>
+          <p className="text-xs text-gray-500 mb-3">
+            نام کاربری اینستاگرام / تلگرام را وارد کنید تا سوابق مربوط به آن
+            نمایش داده شود.
+          </p>
+          <div className="relative">
+            <input
+              placeholder="مثلاً @vardast_support"
+              value={search}
+              className="border border-gray-200 p-3 rounded-xl w-full text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-gray-50"
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+            {suggestions.length > 0 && (
+              <div className="absolute top-full right-0 left-0 bg-white shadow-xl rounded-xl mt-1 max-h-48 overflow-auto border border-gray-100 z-50 text-right">
+                {suggestions.map((u) => (
+                  <div
+                    key={u}
+                    onClick={() => {
+                      setSearch(u);
+                      setSuggestions([]);
+                    }}
+                    className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 text-sm"
+                  >
+                    {u}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
         {search && allRecords.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3 max-w-4xl ml-auto">
             {allRecords.map((r, i) => (
               <div
                 key={i}
-                className="bg-white p-4 rounded-lg shadow-sm border-r-4 border-blue-500 text-right relative"
+                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-right"
               >
-                <div className="flex justify-between text-xs text-gray-500.mb-1">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
                   <span>{r.date}</span>
-                  <span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-100">
                     {r.src === 'issue'
                       ? 'مشکل فنی'
                       : r.src === 'frozen'
-                      ? 'فریز'
+                      ? 'اکانت فریز'
                       : r.src === 'feature'
-                      ? 'فیچر'
+                      ? 'درخواست فیچر'
                       : 'بازگشت وجه'}
                   </span>
                 </div>
-                <div className="font-bold mb-2">
+                <div className="font-semibold text-sm text-gray-800 mb-1">
                   {r.desc_text || r.reason || r.title}
                 </div>
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                  {r.status || r.action}
-                </span>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    {r.username}
+                  </span>
+                  <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700">
+                    {r.status || r.action}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         ) : (
           search && (
-            <div className="text-center text-gray-400">سابقه‌ای یافت نشد</div>
+            <div className="text-center text-gray-400 text-sm">
+              سابقه‌ای برای این کاربر یافت نشد.
+            </div>
           )
         )}
       </div>
@@ -561,39 +624,44 @@ export default function App() {
   if (appPassword && !isAuthed) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center bg-slate-100"
+        className="min-h-screen w-full flex items-center justify-center bg-gradient-to-l from-slate-100 via-slate-50 to-white"
         dir="rtl"
       >
-        <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-sm border border-slate-200">
-          <h1 className="text-xl font-bold mb-4 text-center text-slate-800">
-            ورود به داشبورد پشتیبانی وردست
-          </h1>
-          <p className="text-xs text-slate-500 mb-4 text-center">
-            لطفاً رمز عبور داخلی تیم را وارد کنید.
-          </p>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
-              placeholder="رمز عبور"
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-            />
-            {loginError && (
-              <div className="text-xs text-red-500 text-center">
-                {loginError}
-              </div>
-            )}
-            <button
-              type="submit"
-              className="w-full.bg-blue-600 text-white rounded-xl py-2 text-sm font-bold hover:bg-blue-700 transition"
-            >
-              ورود
-            </button>
-          </form>
-          <div className="mt-4 text-[10px] text-center text-slate-400">
-            اگر رمز را ندارید، از مدیر تیم بخواهید آن را در اختیار شما قرار
-            دهد.
+        <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md border border-slate-100 relative overflow-hidden">
+          <div className="absolute -left-10 -top-10 w-32 h-32 bg-blue-100 rounded-full opacity-40 blur-xl" />
+          <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-sky-100 rounded-full opacity-40 blur-xl" />
+          <div className="relative">
+            <h1 className="text-xl font-extrabold mb-3 text-center text-slate-800">
+              ورود به داشبورد پشتیبانی وردست
+            </h1>
+            <p className="text-xs text-slate-500 mb-6 text-center leading-relaxed">
+              لطفاً رمز عبور داخلی تیم را وارد کنید تا به گزارش‌ها و داشبورد
+              مدیریتی دسترسی داشته باشید.
+            </p>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input
+                type="password"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 bg-slate-50/60 transition"
+                placeholder="رمز عبور"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+              />
+              {loginError && (
+                <div className="text-xs text-red-500 text-center">
+                  {loginError}
+                </div>
+              )}
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-l from-blue-600 to-sky-500 text-white rounded-xl py-2.5 text-sm font-bold hover:from-blue-700 hover:to-sky-600 shadow-md shadow-blue-200 transition"
+              >
+                ورود
+              </button>
+            </form>
+            <div className="mt-4 text-[10px] text-center text-slate-400">
+              اگر رمز را ندارید، از مدیر تیم بخواهید آن را در اختیار شما قرار
+              دهد.
+            </div>
           </div>
         </div>
       </div>
@@ -605,27 +673,34 @@ export default function App() {
   // =================================================================================
   return (
     <div
-      className="w-full h-screen bg-gray-50 text-right font-sans flex overflow-hidden"
+      className="w-full h-screen bg-gradient-to-l from-slate-100 via-slate-50 to-white text-right font-sans flex overflow-hidden"
       dir="rtl"
     >
       {/* سایدبار */}
-      <div
+      <aside
         className={`${
           isSidebarOpen ? 'w-64' : 'w-20'
-        } h-full bg-white border-l flex flex-col transition-all duration-300 shadow-lg z-20 shrink-0`}
+        } h-full bg-white/95 border-l border-slate-100 flex flex-col transition-all duration-300 shadow-lg z-20 backdrop-blur`}
       >
-        <div className="p-5 flex justify-between.items-center border-b">
+        <div className="p-4 flex items-center justify-between border-b border-slate-100">
           {isSidebarOpen && (
-            <span className="font-bold text-blue-700 text-lg">وردست</span>
+            <div className="flex flex-col">
+              <span className="font-extrabold text-blue-700 text-lg leading-none">
+                وردست
+              </span>
+              <span className="text-[10px] text-slate-400 mt-1">
+                داشبورد تیم پشتیبانی
+              </span>
+            </div>
           )}
           <button
             onClick={() => setSidebarOpen(!isSidebarOpen)}
-            className="p-1 hover:bg-gray-100 rounded"
+            className="p-2 hover:bg-slate-50 rounded-xl border border-slate-100"
           >
-            <Menu size={24} />
+            <Menu size={20} />
           </button>
         </div>
-        <div className="flex-1 p-3 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {[
             { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard },
             { id: 'issues', label: 'مشکلات فنی', icon: AlertTriangle },
@@ -637,98 +712,122 @@ export default function App() {
             <button
               key={i.id}
               onClick={() => setActiveTab(i.id)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
                 activeTab === i.id
-                  ? 'bg-blue-50 text-blue-700 font-bold'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100'
+                  : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <i.icon size={20} /> {isSidebarOpen && i.label}
+              <i.icon size={18} />
+              {isSidebarOpen && <span>{i.label}</span>}
             </button>
           ))}
-        </div>
-        <div className="p-4 text-xs text-center text-gray-400 border-t bg-gray-50">
+        </nav>
+        <div className="p-4 text-xs text-center text-gray-400 border-t bg-slate-50/80">
           {isConnected ? (
-            <span className="text-green-600 flex justify-center gap-1 font-bold">
-              <CheckCircle size={14} /> متصل
+            <span className="text-emerald-600 flex justify-center gap-1 font-bold items-center">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              متصل
             </span>
           ) : (
             'آفلاین'
           )}
         </div>
-      </div>
+      </aside>
 
       {/* محتوای اصلی */}
-      <div className="flex-1 h-full overflow-y-auto p-8 relative bg-gray-50">
-        {activeTab === 'dashboard' && (
-          <div className="space-y-6 max-w-7xl mx-auto">
-            <div className="flex justify-between.items-center">
-              <h2 className="text-2xl.font-bold text-gray-800">
-                داشبورد مدیریتی
-              </h2>
-            </div>
+      <main className="flex-1 h-full overflow-y-auto px-5 sm:px-8 lg:px-10 py-6">
+        {/* هدر بالای صفحه */}
+        <header className="flex items-center justify-between mb-6">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800">
+              داشبورد پشتیبانی وردست
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500">
+              مدیریت متمرکز مشکلات فنی، فریز، فیچر ریکوئست‌ها و بازگشت وجه در یک
+              نگاه.
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400">
+            <span className="px-2 py-1 rounded-full bg-white border border-slate-100 shadow-sm">
+              امروز{' '}
+              {new Date().toLocaleDateString('fa-IR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+              })}
+            </span>
+          </div>
+        </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <span className="text-sm text-gray-500 block mb-2">
-                  نرخ حل مشکلات
-                </span>
-                <h3 className="text-3xl font-bold text-green-600">
-                  %{analytics.solvedRatio}
-                </h3>
+        {/* محتوا بر اساس تب */}
+        {activeTab === 'dashboard' && (
+          <section className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
+                <span className="text-xs text-gray-500">نرخ حل مشکلات</span>
+                <div className="flex items-end gap-2">
+                  <h3 className="text-3xl font-extrabold text-emerald-600">
+                    %{analytics.solvedRatio}
+                  </h3>
+                  <span className="text-[11px] text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                    تیکت بسته شده
+                  </span>
+                </div>
               </div>
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <span className="text-sm text-gray-500 block mb-2">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
+                <span className="text-xs text-gray-500">
                   اکانت‌های فریز فعال
                 </span>
-                <h3 className="text-3xl font-bold text-blue-600">
+                <h3 className="text-3xl font-extrabold text-blue-600">
                   {analytics.activeFrozen}
                 </h3>
               </div>
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <span className="text-sm text-gray-500 block mb-2">
-                  تعداد بازگشت وجه
-                </span>
-                <h3 className="text-3xl font-bold text-red-500">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
+                <span className="text-xs text-gray-500">تعداد بازگشت وجه</span>
+                <h3 className="text-3xl font-extrabold text-rose-500">
                   {analytics.refundCount}
                 </h3>
               </div>
-              <div className="bg-white p-6 rounded-2xl shadow-sm border.border-gray-100">
-                <span className="text-sm text-gray-500 block mb-2">
-                  کل تیکت‌ها
-                </span>
-                <h3 className="text-3xl font-bold text-gray-700">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-1 hover:shadow-md transition">
+                <span className="text-xs text-gray-500">کل تیکت‌ها</span>
+                <h3 className="text-3xl font-extrabold text-slate-800">
                   {issues.length}
                 </h3>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-80">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-                <h4 className="font-bold mb-4 text-gray-700">
-                  روند ثبت مشکلات
-                </h4>
-                <div className="flex-1 min-h-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 min-h-[280px]">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-gray-700 text-sm">
+                    روند ثبت مشکلات
+                  </h4>
+                </div>
+                <div className="flex-1 min-h-[220px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
-                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                       <Tooltip />
                       <Line
                         type="monotone"
                         dataKey="count"
                         stroke="#3b82f6"
                         strokeWidth={3}
-                        dot={{ r: 4 }}
+                        dot={{ r: 3 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-                <h4 className="font-bold mb-4 text-gray-700">
-                  دلایل بازگشت وجه
-                </h4>
-                <div className="flex-1 min-h-0">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-gray-700 text-sm">
+                    دلایل بازگشت وجه
+                  </h4>
+                </div>
+                <div className="flex-1 min-h-[220px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -751,124 +850,190 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </div>
+          </section>
         )}
 
         {activeTab === 'profile' && <UserProfile />}
 
         {['issues', 'frozen', 'features', 'refunds'].includes(activeTab) && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 min-h-[70vh] max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="font-bold text-xl text-gray-800">لیست داده‌ها</h2>
-              <div className="flex gap-3">
-                <button
-                  onClick={() =>
-                    downloadCSV(
+          <section className="mt-4">
+            <div className="bg-white/95 rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 min-h-[60vh]">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                <div className="flex flex-col gap-1">
+                  <h2 className="font-bold text-lg text-gray-800">
+                    {activeTab === 'issues'
+                      ? 'لیست مشکلات فنی'
+                      : activeTab === 'frozen'
+                      ? 'لیست اکانت‌های فریز'
+                      : activeTab === 'features'
+                      ? 'درخواست‌های فیچر'
+                      : 'درخواست‌های بازگشت وجه'}
+                  </h2>
+                  <p className="text-[11px] text-slate-500">
+                    ردیف‌ها را می‌توانید ویرایش کنید و با فلگ‌گذاری، موارد مهم را
+                    برجسته نگه دارید.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() =>
+                      downloadCSV(
+                        activeTab === 'issues'
+                          ? issues
+                          : activeTab === 'frozen'
+                          ? frozen
+                          : activeTab === 'features'
+                          ? features
+                          : refunds,
+                        activeTab
+                      )
+                    }
+                    className="border border-gray-200 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-gray-50 transition bg-white"
+                  >
+                    <Download size={16} /> خروجی اکسل
+                  </button>
+                  <button
+                    onClick={() =>
+                      openModal(
+                        activeTab === 'issues'
+                          ? 'issue'
+                          : activeTab === 'frozen'
+                          ? 'frozen'
+                          : activeTab === 'features'
+                          ? 'feature'
+                          : 'refund'
+                      )
+                    }
+                    className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-blue-700 shadow-md shadow-blue-200 transition"
+                  >
+                    <Plus size={16} /> ثبت جدید
+                  </button>
+                </div>
+              </div>
+              <div className="overflow-x-auto rounded-2xl border border-gray-100">
+                <table className="w-full text-sm text-right">
+                  <thead className="bg-slate-50 text-gray-600 border-b">
+                    <tr>
+                      <th className="p-3 sm:p-4">تاریخ</th>
+                      <th className="p-3 sm:p-4">کاربر</th>
+                      <th className="p-3 sm:p-4">توضیحات</th>
+                      <th className="p-3 sm:p-4">وضعیت</th>
+                      <th className="p-3 sm:p-4">اقدام</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white">
+                    {(activeTab === 'issues'
+                      ? issues
+                      : activeTab === 'frozen'
+                      ? frozen
+                      : activeTab === 'features'
+                      ? features
+                      : refunds
+                    ).map((row) => (
+                      <tr
+                        key={row.id}
+                        className={`border-b last:border-0 transition ${
+                          row.flag === 'پیگیری فوری'
+                            ? 'bg-red-50/70'
+                            : row.flag === 'پیگیری مهم'
+                            ? 'bg-amber-50'
+                            : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <td className="p-3 sm:p-4 text-gray-500 text-xs sm:text-sm whitespace-nowrap">
+                          {row.created_at || row.frozen_at || row.requested_at}
+                        </td>
+                        <td className="p-3 sm:p-4 font-semibold text-gray-800 text-xs sm:text-sm whitespace-nowrap">
+                          {row.username}
+                        </td>
+                        <td
+                          className="p-3 sm:p-4 max-w-md truncate text-gray-600 text-xs sm:text-sm"
+                          title={row.desc_text || row.reason || row.title}
+                        >
+                          {row.desc_text || row.reason || row.title}
+                        </td>
+                        <td className="p-3 sm:p-4 text-xs sm:text-sm">
+                          <span
+                            className={`px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap ${
+                              row.status === 'حل‌شده' ||
+                              row.status === 'انجام شد'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}
+                          >
+                            {row.status || row.action}
+                          </span>
+                        </td>
+                        <td className="p-3 sm:p-4 text-left text-xs sm:text-sm">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openModal(
+                                activeTab === 'issues'
+                                  ? 'issue'
+                                  : activeTab === 'frozen'
+                                  ? 'frozen'
+                                  : activeTab === 'features'
+                                  ? 'feature'
+                                  : 'refund',
+                                row
+                              )
+                            }
+                            className="text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 transition bg-white"
+                          >
+                            ویرایش
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {(
                       activeTab === 'issues'
                         ? issues
                         : activeTab === 'frozen'
                         ? frozen
                         : activeTab === 'features'
                         ? features
-                        : refunds,
-                      activeTab
-                    )
-                  }
-                  className="border border-gray-200 px-4 py-2 rounded-xl text-sm flex gap-2 items-center hover:bg-gray-50 transition"
-                >
-                  <Download size={18} /> خروجی اکسل
-                </button>
-                <button
-                  onClick={() =>
-                    openModal(
-                      activeTab === 'issues'
-                        ? 'issue'
-                        : activeTab === 'frozen'
-                        ? 'frozen'
-                        : activeTab === 'features'
-                        ? 'feature'
-                        : 'refund'
-                    )
-                  }
-                  className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm flex gap-2 items-center hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
-                >
-                  <Plus size={18} /> ثبت جدید
-                </button>
+                        : refunds
+                    ).length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="p-6 text-center text-xs text-slate-400"
+                        >
+                          هنوز موردی ثبت نشده است.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-right">
-                <thead className="bg-gray-50 text-gray-600 border-b">
-                  <tr>
-                    <th className="p-4">تاریخ</th>
-                    <th className="p-4">کاربر</th>
-                    <th className="p-4">توضیحات</th>
-                    <th className="p-4">وضعیت</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(activeTab === 'issues'
-                    ? issues
-                    : activeTab === 'frozen'
-                    ? frozen
-                    : activeTab === 'features'
-                    ? features
-                    : refunds
-                  ).map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-b hover:bg-gray-50 transition"
-                    >
-                      <td className="p-4 text-gray-500">
-                        {row.created_at || row.frozen_at || row.requested_at}
-                      </td>
-                      <td className="p-4 font-bold text-gray-800">
-                        {row.username}
-                      </td>
-                      <td
-                        className="p-4 max-w-md truncate text-gray-600"
-                        title={row.desc_text || row.reason || row.title}
-                      >
-                        {row.desc_text || row.reason || row.title}
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            row.status === 'حل‌شده' ||
-                            row.status === 'انجام شد'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {row.status || row.action}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          </section>
         )}
-      </div>
+      </main>
 
       {/* مودال */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-50 p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all">
-            <div className="p-5 border-b bg-gray-50 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-gray-800">ثبت مورد جدید</h3>
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all border border-slate-100">
+            <div className="p-4 sm:p-5 border-b bg-slate-50 flex justify-between items-center">
+              <h3 className="font-bold text-sm sm:text-base text-gray-800">
+                {editingId ? 'ویرایش گزارش' : 'ثبت مورد جدید'}
+              </h3>
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setEditingId(null);
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
 
             <form
               onSubmit={handleSave}
-              className="p-6 space-y-4 max-h-[80vh] overflow-y-auto"
+              className="p-4 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto"
             >
               {/* فیلد مشترک: نام کاربری */}
               <div className="space-y-1">
@@ -879,7 +1044,7 @@ export default function App() {
                   onChange={(e) =>
                     setFormData({ ...formData, username: e.target.value })
                   }
-                  className="w-full border p-3 rounded-xl outline-none focus:border-blue-500 transition"
+                  className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-slate-50/60 text-sm"
                 />
               </div>
 
@@ -888,7 +1053,6 @@ export default function App() {
                  ========================= */}
               {modalType === 'issue' && (
                 <>
-                  {/* وضعیت اشتراک + پشتیبان */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs text-gray-500">
@@ -902,7 +1066,7 @@ export default function App() {
                             subscription_status: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       >
                         <option value="">انتخاب...</option>
                         <option value="Active">Active</option>
@@ -923,12 +1087,11 @@ export default function App() {
                             support: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* شرح مشکل + دکمه AI */}
                   <div className="relative space-y-1">
                     <label className="text-xs text-gray-500">شرح مشکل</label>
                     <textarea
@@ -940,23 +1103,22 @@ export default function App() {
                           desc_text: e.target.value,
                         })
                       }
-                      className="w-full border p-3 rounded-xl outline-none focus:border-blue-500 transition"
+                      className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-white text-sm"
                     ></textarea>
                     <button
                       type="button"
                       onClick={handleSmartAnalysis}
-                      className="absolute bottom-3 left-3 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-3 py-1.5 rounded-lg flex gap-1 items-center transition"
+                      className="absolute bottom-3 left-3 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] px-3 py-1.5 rounded-lg flex gap-1 items-center border border-purple-100 transition"
                     >
                       {aiLoading ? (
                         <Loader2 size={14} className="animate-spin" />
                       ) : (
                         <Sparkles size={14} />
-                      )}{' '}
+                      )}
                       تحلیل هوشمند
                     </button>
                   </div>
 
-                  {/* ماژول + نوع مشکل */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs text-gray-500">ماژول</label>
@@ -968,7 +1130,7 @@ export default function App() {
                             module: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       >
                         <option value="">انتخاب...</option>
                         <option value="پرامپت">پرامپت</option>
@@ -992,7 +1154,7 @@ export default function App() {
                             type: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       >
                         <option value="">انتخاب...</option>
                         <option value="باگ فنی">باگ فنی</option>
@@ -1005,7 +1167,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* وضعیت حل + تاریخ حل */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs text-gray-500">
@@ -1019,7 +1180,7 @@ export default function App() {
                             status: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       >
                         <option value="باز">باز</option>
                         <option value="در حال بررسی">در حال بررسی</option>
@@ -1039,12 +1200,11 @@ export default function App() {
                             resolved_at: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* یادداشت فنی */}
                   <div className="space-y-1">
                     <label className="text-xs text-gray-500">
                       یادداشت فنی / علت نهایی
@@ -1058,7 +1218,7 @@ export default function App() {
                           technical_note: e.target.value,
                         })
                       }
-                      className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                     ></textarea>
                   </div>
                 </>
@@ -1082,7 +1242,7 @@ export default function App() {
                             subscription_status: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       >
                         <option value="">انتخاب...</option>
                         <option value="Active">Active</option>
@@ -1102,7 +1262,7 @@ export default function App() {
                             module: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                   </div>
@@ -1116,7 +1276,7 @@ export default function App() {
                       onChange={(e) =>
                         setFormData({ ...formData, cause: e.target.value })
                       }
-                      className="w-full border p-3 rounded-xl"
+                      className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                     />
                   </div>
 
@@ -1132,7 +1292,7 @@ export default function App() {
                           desc_text: e.target.value,
                         })
                       }
-                      className="w-full border p-3 rounded-xl"
+                      className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                     ></textarea>
                   </div>
 
@@ -1150,7 +1310,7 @@ export default function App() {
                             first_frozen_at: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl.text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1166,7 +1326,7 @@ export default function App() {
                             freeze_count: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1182,7 +1342,7 @@ export default function App() {
                             last_frozen_at: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                   </div>
@@ -1200,7 +1360,7 @@ export default function App() {
                             status: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       >
                         <option value="فریز">فریز</option>
                         <option value="رفع شده">رفع شده</option>
@@ -1219,7 +1379,7 @@ export default function App() {
                             resolve_status: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                   </div>
@@ -1237,7 +1397,7 @@ export default function App() {
                           note: e.target.value,
                         })
                       }
-                      className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                     ></textarea>
                   </div>
                 </div>
@@ -1257,13 +1417,13 @@ export default function App() {
                         desc_text: e.target.value,
                       })
                     }
-                    className="w-full border p-3 rounded-xl"
+                    className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                   ></textarea>
 
                   <button
                     type="button"
                     onClick={handleFeatureAI}
-                    className="bg-purple-50 text-purple-600 text-xs w-full py-2 rounded-xl flex justify-center gap-1"
+                    className="bg-purple-50 text-purple-600 text-[11px] w-full py-2 rounded-xl flex justify-center gap-1 items-center border border-purple-100"
                   >
                     <Sparkles size={14} /> پیشنهاد عنوان
                   </button>
@@ -1277,7 +1437,7 @@ export default function App() {
                         title: e.target.value,
                       })
                     }
-                    className="w-full border p-3 rounded-xl"
+                    className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                   />
 
                   <div className="grid grid-cols-2 gap-3">
@@ -1293,7 +1453,7 @@ export default function App() {
                             category: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1308,7 +1468,7 @@ export default function App() {
                             status: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       >
                         <option value="بررسی نشده">بررسی نشده</option>
                         <option value="در تحلیل">در تحلیل</option>
@@ -1332,7 +1492,7 @@ export default function App() {
                             repeat_count: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1348,7 +1508,7 @@ export default function App() {
                             importance: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                   </div>
@@ -1366,7 +1526,7 @@ export default function App() {
                           internal_note: e.target.value,
                         })
                       }
-                      className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                     ></textarea>
                   </div>
                 </div>
@@ -1384,19 +1544,19 @@ export default function App() {
                     onChange={(e) =>
                       setFormData({ ...formData, reason: e.target.value })
                     }
-                    className="w-full border p-3 rounded-xl"
+                    className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                   ></textarea>
 
                   <button
                     type="button"
                     onClick={handleRefundAI}
-                    className="bg-purple-50 text-purple-600 text-xs w-full py-2 rounded-xl flex.justify-center gap-1"
+                    className="bg-purple-50 text-purple-600 text-[11px] w-full py-2 rounded-xl flex justify-center gap-1 items-center border border-purple-100"
                   >
                     <Sparkles size={14} /> پیشنهاد متن پاسخ به کاربر
                   </button>
 
                   {formData.suggestion && (
-                    <div className="text-xs bg-purple-50 p-3 rounded-xl border border-purple-100 text-purple-800.leading-relaxed">
+                    <div className="text-[11px] bg-purple-50 p-3 rounded-xl border border-purple-100 text-purple-800 leading-relaxed">
                       {formData.suggestion}
                     </div>
                   )}
@@ -1410,7 +1570,7 @@ export default function App() {
                         duration: e.target.value,
                       })
                     }
-                    className="w-full border p-3 rounded-xl"
+                    className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                   />
 
                   <div className="grid grid-cols-2 gap-3">
@@ -1426,7 +1586,7 @@ export default function App() {
                             category: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl.text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1441,7 +1601,7 @@ export default function App() {
                             action: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       >
                         <option value="در بررسی">در بررسی</option>
                         <option value="بازپرداخت شد">بازپرداخت شد</option>
@@ -1464,7 +1624,7 @@ export default function App() {
                             sales_source: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1479,7 +1639,7 @@ export default function App() {
                             can_return: e.target.value,
                           })
                         }
-                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                        className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                       >
                         <option value="">نامشخص</option>
                         <option value="بله">بله</option>
@@ -1501,7 +1661,7 @@ export default function App() {
                           ops_note: e.target.value,
                         })
                       }
-                      className="w-full border p-3 rounded-xl.text-sm bg-white outline-none"
+                      className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                     ></textarea>
                   </div>
                 </div>
@@ -1517,22 +1677,21 @@ export default function App() {
                   onChange={(e) =>
                     setFormData({ ...formData, flag: e.target.value })
                   }
-                  className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                  className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"
                 >
                   <option value="">بدون فلگ</option>
                   <option value="پیگیری مهم">پیگیری مهم</option>
                   <option value="پیگیری فوری">پیگیری فوری</option>
                 </select>
                 <p className="text-[10px] text-gray-400">
-                  از فلگ برای علامت‌گذاری تیکت‌های حساس یا نیازمند پیگیری
-                  مجدد استفاده کنید.
+                  از فلگ برای علامت‌گذاری تیکت‌های حساس یا نیازمند پیگیری مجدد
+                  استفاده کنید. رنگ ردیف‌ها در لیست بر این اساس تغییر می‌کند.
                 </p>
               </div>
 
-              {/* دکمه ذخیره */}
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 mt-2"
+                className="w-full bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-md shadow-blue-200 mt-2 text-sm"
               >
                 ذخیره اطلاعات
               </button>
