@@ -42,7 +42,7 @@ import {
 } from 'recharts';
 
 // =================================================================================
-// 🔧 تنظیمات اتصال (env vars)
+// 🔧 تنظیمات اتصال (Variables)
 // =================================================================================
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -86,7 +86,7 @@ const INITIAL_FORM_DATA = {
 };
 
 // =================================================================================
-// 🎨 Tailwind & Custom Styles
+// 🎨 استایل‌ها و تنظیمات Tailwind
 // =================================================================================
 const useTailwind = () => {
   useEffect(() => {
@@ -152,13 +152,13 @@ try {
 }
 
 // =================================================================================
-// 🤖 Gemini Helper
+// 🤖 Gemini AI Helper
 // =================================================================================
 const callGeminiAI = async (prompt, isJson = false) => {
   if (!geminiApiKey) return alert('کلید هوش مصنوعی وارد نشده است.');
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -179,7 +179,7 @@ const callGeminiAI = async (prompt, isJson = false) => {
 };
 
 // =================================================================================
-// ⬇️ CSV Export
+// ⬇️ CSV Export Helper
 // =================================================================================
 const downloadCSV = (data, fileName) => {
   if (!data || !data.length) return alert('داده‌ای وجود ندارد.');
@@ -205,7 +205,7 @@ const downloadCSV = (data, fileName) => {
 };
 
 // =================================================================================
-// 👤 User Avatar Component
+// 👤 کامپوننت آواتار
 // =================================================================================
 const UserAvatar = ({ name, size = 'md' }) => {
     const safeName = name || '?';
@@ -222,30 +222,33 @@ const UserAvatar = ({ name, size = 'md' }) => {
 };
 
 // =================================================================================
-// 🧠 Main Component
+// 🧠 کامپوننت اصلی (App)
 // =================================================================================
 export default function App() {
   useTailwind();
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  // پیش‌فرض در دسکتاپ باز باشد
   const [isSidebarOpen, setSidebarOpen] = useState(
     typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
   );
   
   const [isConnected, setIsConnected] = useState(false);
 
+  // داده‌ها
   const [issues, setIssues] = useState([]);
   const [frozen, setFrozen] = useState([]);
   const [features, setFeatures] = useState([]);
   const [refunds, setRefunds] = useState([]);
 
+  // وضعیت مودال و فرم
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState(null);
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [editingId, setEditingId] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Resize Handler
+  // هندلر تغییر سایز صفحه
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
@@ -258,7 +261,7 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Login State
+  // وضعیت لاگین
   const [isAuthed, setIsAuthed] = useState(() => {
     if (typeof window === 'undefined') return false;
     if (!appPassword) return true;
@@ -282,7 +285,7 @@ export default function App() {
     }
   };
 
-  // Data Fetching
+  // دریافت داده‌ها از Supabase
   useEffect(() => {
     if (!supabase) return;
     setIsConnected(true);
@@ -319,7 +322,7 @@ export default function App() {
     };
   }, []);
 
-  // Analytics
+  // محاسبات آماری (Analytics)
   const analytics = useMemo(() => {
     const resolved = issues.filter((i) => i.status === 'حل‌شده').length;
     const total = issues.length;
@@ -331,8 +334,9 @@ export default function App() {
     };
   }, [issues, frozen, refunds]);
 
-  // Churn Prediction Logic
+  // 🔥 الگوریتم تشخیص خطر ریزش (Churn Prediction)
   const churnRisks = useMemo(() => {
+      // نگاه به ۱۰۰ تیکت آخر
       const recentIssues = issues.slice(0, 100); 
       const userCounts = {};
       
@@ -344,6 +348,7 @@ export default function App() {
           userCounts[i.username].issues.push(i.desc_text);
       });
 
+      // فیلتر: کسانی که بیشتر یا مساوی ۳ مشکل داشته‌اند
       return Object.entries(userCounts)
         .filter(([_, data]) => data.count >= 3)
         .map(([username, data]) => ({ username, count: data.count, issues: data.issues }));
@@ -370,7 +375,7 @@ export default function App() {
 
   const COLORS = ['#0ea5e9', '#22c55e', '#f97316', '#a855f7', '#e11d48'];
 
-  // AI Functions
+  // توابع هوش مصنوعی (AI)
   const handleAiChurnAnalysis = async (user) => {
       setAiLoading(true);
       const prompt = `
@@ -417,7 +422,7 @@ export default function App() {
     if (res) setFormData((prev) => ({ ...prev, suggestion: res.trim() }));
   };
 
-  // Form Saving
+  // ذخیره فرم (Save)
   const handleSave = async (e) => {
     e.preventDefault();
     const today = new Date().toLocaleDateString('fa-IR');
@@ -523,7 +528,7 @@ export default function App() {
     setIsModalOpen(true);
   };
 
-  // User Profile Component
+  // کامپوننت پروفایل کاربر
   const UserProfile = () => {
     const [search, setSearch] = useState('');
     const [suggestions, setSuggestions] = useState([]);
@@ -623,12 +628,24 @@ export default function App() {
     );
   };
 
-  if (appPassword && !isAuthed) return <div className="fixed inset-0 w-full h-full grid place-items-center bg-gray-50" dir="rtl"><div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md border border-slate-100 relative overflow-hidden mx-4"><h1 className="text-xl font-extrabold mb-3 text-center text-slate-800">ورود به داشبورد پشتیبانی</h1><form onSubmit={handleLogin} className="space-y-4"><input type="password" className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500 bg-slate-50/60" placeholder="رمز عبور" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} />{loginError && <div className="text-xs text-red-500 text-center">{loginError}</div>}<button type="submit" className="w-full bg-gradient-to-l from-blue-600 to-sky-500 text-white rounded-xl py-2.5 text-sm font-bold shadow-md">ورود</button></form></div></div>;
+  // رندر شرطی صفحه ورود
+  if (appPassword && !isAuthed) return (
+     <div className="fixed inset-0 w-full h-full grid place-items-center bg-gray-50" dir="rtl">
+         <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md">
+            <h1 className="text-xl font-bold mb-4 text-center">ورود به سیستم</h1>
+            <input type="password" value={passwordInput} onChange={e=>setPasswordInput(e.target.value)} className="w-full border p-3 rounded-xl mb-4" placeholder="رمز عبور"/>
+            <button className="w-full bg-blue-600 text-white p-3 rounded-xl">ورود</button>
+         </form>
+     </div>
+  );
 
   return (
-    <div className="flex h-screen w-full bg-[#F3F4F6] text-right font-sans overflow-hidden relative" dir="rtl">
+    // ------------------------------------------------------------------------------------------------
+    // ساختار اصلی (Layout) - بخش اصلاح شده
+    // ------------------------------------------------------------------------------------------------
+    <div className="flex h-screen w-full bg-[#F3F4F6] font-sans overflow-hidden relative" dir="rtl">
       
-      {/* 🔮 Background Blobs */}
+      {/* 🔮 پس‌زمینه متحرک */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob pointer-events-none"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000 pointer-events-none"></div>
 
@@ -640,25 +657,33 @@ export default function App() {
         />
       )}
       
-      {/* ---------------- Sidebar ---------------- */}
+      {/* ---------------- Sidebar (منوی راست) ---------------- */}
       <aside 
         className={`
-          fixed lg:relative z-50 h-full bg-white/80 border-l border-white/50 
-          flex flex-col transition-all duration-300 ease-in-out shadow-2xl lg:shadow-none backdrop-blur-xl
+          /* تنظیمات پایه */
+          bg-white/80 border-l border-white/50 backdrop-blur-xl z-50 transition-all duration-300 ease-in-out flex flex-col
+          
+          /* حالت موبایل: فیکس شده */
+          fixed inset-y-0 right-0 h-full shadow-2xl
+          
+          /* حالت دسکتاپ: ریلیتیو */
+          lg:relative lg:shadow-none lg:translate-x-0
+
+          /* لاجیک باز/بسته */
           ${isSidebarOpen ? 'translate-x-0 w-64' : 'translate-x-full lg:translate-x-0 lg:w-20'}
-          inset-y-0 right-0
         `}
       >
-        <div className="p-5 flex items-center justify-between h-20 border-b border-gray-100/50">
-           <div className={`flex flex-col overflow-hidden transition-all ${!isSidebarOpen && 'lg:opacity-0 lg:hidden'}`}>
+        <div className="p-5 flex items-center justify-between h-20 border-b border-gray-100/50 shrink-0">
+           <div className={`flex flex-col overflow-hidden transition-all duration-300 ${!isSidebarOpen && 'lg:opacity-0 lg:hidden'}`}>
              <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-l from-blue-600 to-purple-600 text-xl leading-none">وردست</span>
              <span className="text-[10px] text-slate-400 mt-1">داشبورد هوشمند</span>
            </div>
-           <div className={`hidden lg:flex ${isSidebarOpen && 'hidden'}`}>
-              <span className="font-extrabold text-blue-700 text-xl">V</span>
+           
+           <div className={`hidden lg:flex items-center justify-center w-full ${isSidebarOpen && 'hidden'}`}>
+              <span className="font-extrabold text-blue-700 text-2xl">V</span>
            </div>
            
-           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-slate-100 rounded-xl transition text-slate-600">
+           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-slate-100 rounded-xl transition text-slate-600 lg:mr-auto">
              {isSidebarOpen ? <X size={20} className="lg:hidden"/> : <Menu size={20}/>}
              <Menu size={20} className="hidden lg:block"/>
            </button>
@@ -677,11 +702,11 @@ export default function App() {
             ))}
         </nav>
 
-        <div className="p-4 border-t border-gray-100 text-center">
+        <div className="p-4 border-t border-gray-100 text-center shrink-0">
             {isConnected ? (
               <div className={`flex items-center justify-center gap-2 text-xs font-medium text-emerald-600 ${!isSidebarOpen && 'lg:hidden'}`}>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>سیستم آنلاین</span>
+                <span>آنلاین</span>
               </div>
             ) : (
                <span className="text-xs text-red-400">آفلاین</span>
@@ -689,11 +714,11 @@ export default function App() {
         </div>
       </aside>
 
-      {/* ---------------- Main Content ---------------- */}
-      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative z-0 custom-scrollbar">
-        <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[1600px] mx-auto">
-          
-          <header className="flex items-center justify-between mb-8 sticky top-0 z-30 pt-2 pb-4 bg-[#F3F4F6]/80 backdrop-blur-md">
+      {/* ---------------- Main Content (محتوای اصلی) ---------------- */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative z-0">
+        
+        {/* هدر */}
+        <header className="flex items-center justify-between px-6 py-4 bg-[#F3F4F6]/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
             <div className="flex items-center gap-3">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-600 active:scale-95 transition">
                 <Menu size={20} />
@@ -707,9 +732,12 @@ export default function App() {
             <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 bg-white/60 px-3 py-1.5 rounded-full border border-white shadow-sm">
                <span>امروز {new Date().toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
             </div>
-          </header>
+        </header>
 
-          <div className="space-y-6">
+        {/* محتوا */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 w-full max-w-[1920px] mx-auto custom-scrollbar">
+          
+          <div className="space-y-6 pb-10">
             
             {activeTab === 'dashboard' && (
               <>
@@ -740,6 +768,7 @@ export default function App() {
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                     
+                    {/* کارت ریسک چرن */}
                     <div className="col-span-1 bg-white/70 backdrop-blur-md p-6 rounded-[2rem] shadow-sm border border-red-100 flex flex-col h-auto min-h-[350px]">
                         <h4 className="font-bold text-gray-800 text-sm mb-5 flex items-center gap-2">
                             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-500 shadow-inner"><AlertCircle size={16}/></span>
@@ -777,6 +806,7 @@ export default function App() {
                         </div>
                     </div>
 
+                    {/* نمودارها */}
                     <div className="col-span-1 xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                          <div className="bg-white/70 backdrop-blur-md p-6 rounded-[2rem] shadow-sm border border-white flex flex-col h-[350px]">
                             <h4 className="font-bold text-gray-700 text-sm mb-4 flex items-center gap-2"><TrendingUp size={18} className="text-blue-500"/>روند ثبت مشکلات</h4>
@@ -852,10 +882,10 @@ export default function App() {
             )}
 
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
 
-      {/* Modal */}
+      {/* Modal (ثابت) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-[60] p-4">
           <div className="bg-white/95 backdrop-blur w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-white max-h-[90vh] flex flex-col animate-fade-in-up">
