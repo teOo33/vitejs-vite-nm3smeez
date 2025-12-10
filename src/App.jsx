@@ -37,9 +37,10 @@ import {
 // 🔧 تنظیمات اتصال (کلیدهای شما)
 // =================================================================================
 
-const supabaseUrl = 'https://ytehbxdrlglmtmmrwzzd.supabase.co';
-const supabaseKey = 'sb_publishable_ZmCzfLqC0ShzZdz_MrXjMA_wWSKltjJ'; // کلید پابلیک
-const geminiApiKey = 'AIzaSyAnK6xo7_xZYZBQn9Cn9dfn1lPGWPneVqY';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
 
 // =================================================================================
 // 🎨 Tailwind از CDN
