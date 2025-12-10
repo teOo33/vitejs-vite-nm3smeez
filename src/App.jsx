@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 
 // =================================================================================
-// 📦 ایمپورت‌های نرمال از پکیج‌ها (نه از URL)
+// 📦 ایمپورت‌ها
 // =================================================================================
 import { createClient } from '@supabase/supabase-js';
 
@@ -34,13 +34,12 @@ import {
 } from 'recharts';
 
 // =================================================================================
-// 🔧 تنظیمات اتصال (کلیدهای شما)
+// 🔧 تنظیمات اتصال (env vars)
 // =================================================================================
-
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
+const appPassword = import.meta.env.VITE_APP_PASSWORD || '';
 
 // =================================================================================
 // 🎨 Tailwind از CDN
@@ -144,6 +143,30 @@ export default function App() {
   const [modalType, setModalType] = useState(null);
   const [formData, setFormData] = useState({});
   const [aiLoading, setAiLoading] = useState(false);
+
+  // ---------- login state ----------
+  const [isAuthed, setIsAuthed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    if (!appPassword) return true; // اگر پسورد تعریف نشده، لاگین لازم نیست
+    return localStorage.getItem('vardast_ops_authed') === '1';
+  });
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (!appPassword) {
+      setIsAuthed(true);
+      return;
+    }
+    if (passwordInput === appPassword) {
+      setIsAuthed(true);
+      localStorage.setItem('vardast_ops_authed', '1');
+      setLoginError('');
+    } else {
+      setLoginError('رمز عبور اشتباه است.');
+    }
+  };
 
   // -------------------- Load data from Supabase --------------------
   useEffect(() => {
@@ -447,7 +470,52 @@ export default function App() {
   };
 
   // =================================================================================
-  // 🖥️ Render Layout
+  // 🔐 Login Gate
+  // =================================================================================
+  if (appPassword && !isAuthed) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center bg-slate-100"
+        dir="rtl"
+      >
+        <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-sm border border-slate-200">
+          <h1 className="text-xl font-bold mb-4 text-center text-slate-800">
+            ورود به داشبورد پشتیبانی وردست
+          </h1>
+          <p className="text-xs text-slate-500 mb-4 text-center">
+            لطفاً رمز عبور داخلی تیم را وارد کنید.
+          </p>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="password"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="رمز عبور"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+            />
+            {loginError && (
+              <div className="text-xs text-red-500 text-center">
+                {loginError}
+              </div>
+            )}
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white rounded-xl py-2 text-sm font-bold hover:bg-blue-700 transition"
+            >
+              ورود
+            </button>
+          </form>
+          <div className="mt-4 text-[10px] text-center text-slate-400">
+            اگر رمز را ندارید، از مدیر تیم بخواهید آن را در اختیار شما قرار
+            دهد.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =================================================================================
+  // 🖥️ Render Layout اصلی
   // =================================================================================
   return (
     <div
@@ -483,7 +551,7 @@ export default function App() {
             <button
               key={i.id}
               onClick={() => setActiveTab(i.id)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+              className={`w-full flex items.CENTER gap-3 p-3 rounded-xl transition-all ${
                 activeTab === i.id
                   ? 'bg-blue-50 text-blue-700 font-bold'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -524,14 +592,14 @@ export default function App() {
                 </h3>
               </div>
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <span className="text-sm text-gray-500 block mb-2">
+                <span className="text-sm text-gray-500 block.mb-2">
                   اکانت‌های فریز فعال
                 </span>
                 <h3 className="text-3xl font-bold text-blue-600">
                   {analytics.activeFrozen}
                 </h3>
               </div>
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div className="bg.WHITE p-6 rounded-2xl shadow-sm border border-gray-100">
                 <span className="text-sm text-gray-500 block mb-2">
                   تعداد بازگشت وجه
                 </span>
@@ -636,7 +704,7 @@ export default function App() {
                         : 'refund'
                     )
                   }
-                  className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm flex gap-2 items-center hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm flex gap-2.items-center hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
                 >
                   <Plus size={18} /> ثبت جدید
                 </button>
@@ -680,7 +748,8 @@ export default function App() {
                       <td className="p-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            row.status === 'حل‌شده' || row.status === 'انجام شد'
+                            row.status === 'حل‌شده' ||
+                            row.status === 'انجام شد'
                               ? 'bg-green-100 text-green-700'
                               : 'bg-gray-100 text-gray-700'
                           }`}
@@ -700,7 +769,7 @@ export default function App() {
       {/* مودال */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-50 p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden.transform transition-all">
             <div className="p-5 border-b bg-gray-50 flex justify-between items-center">
               <h3 className="font-bold text-lg text-gray-800">ثبت مورد جدید</h3>
               <button
@@ -742,7 +811,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleSmartAnalysis}
-                      className="absolute bottom-3 left-3 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-3 py-1.5 rounded-lg flex gap-1 items-center transition"
+                      className="absolute.bottom-3 left-3 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-3 py-1.5 rounded-lg flex gap-1 items-center transition"
                     >
                       {aiLoading ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -912,7 +981,7 @@ export default function App() {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 mt-2"
+                className="w-full bg-blue-600 text-white p-3 rounded-xl.font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 mt-2"
               >
                 ذخیره اطلاعات
               </button>
