@@ -86,16 +86,14 @@ const INITIAL_FORM_DATA = {
 };
 
 // =================================================================================
-// 🎨 Tailwind & Styles
+// 🎨 Tailwind از CDN
 // =================================================================================
 const useTailwind = () => {
   useEffect(() => {
-    // جلوگیری از اسکرول بادی اصلی (اسکرول داخل کانتینر انجام می‌شود)
     document.body.style.margin = '0';
     document.body.style.padding = '0';
-    document.body.style.height = '100vh';
-    document.body.style.width = '100vw';
-    document.body.style.overflow = 'hidden';
+    document.body.style.minHeight = '100vh';
+    document.body.style.width = '100%';
 
     if (!document.getElementById('tailwind-cdn')) {
       const script = document.createElement('script');
@@ -126,19 +124,19 @@ const useTailwind = () => {
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        /* اسکرول بار زیبا */
-        ::-webkit-scrollbar {
+        /* اصلاح اسکرول‌بار */
+        .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
-          height: 6px;
         }
-        ::-webkit-scrollbar-track {
-          background: transparent;
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
         }
-        ::-webkit-scrollbar-thumb {
+        .custom-scrollbar::-webkit-scrollbar-thumb {
           background: #cbd5e1;
           border-radius: 10px;
         }
-        ::-webkit-scrollbar-thumb:hover {
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #94a3b8;
         }
       `;
@@ -220,10 +218,10 @@ const UserAvatar = ({ name, size = 'md' }) => {
     const colors = ['from-blue-400 to-blue-600', 'from-purple-400 to-purple-600', 'from-pink-400 to-pink-600', 'from-emerald-400 to-emerald-600', 'from-orange-400 to-orange-600'];
     const colorIndex = safeName.length % colors.length;
     
-    const sizeClasses = size === 'lg' ? 'w-12 h-12 text-lg' : 'w-9 h-9 text-sm';
+    const sizeClasses = size === 'lg' ? 'w-12 h-12 text-lg' : size === 'sm' ? 'w-8 h-8 text-xs' : 'w-9 h-9 text-sm';
 
     return (
-        <div className={`${sizeClasses} rounded-full bg-gradient-to-br ${colors[colorIndex]} text-white flex items-center justify-center font-bold shadow-md ring-2 ring-white shrink-0`}>
+        <div className={`${sizeClasses} rounded-full bg-gradient-to-br ${colors[colorIndex]} text-white flex items-center justify-center font-bold shadow-md ring-2 ring-white flex-shrink-0`}>
             {safeName.charAt(0)}
         </div>
     );
@@ -236,10 +234,8 @@ export default function App() {
   useTailwind();
 
   const [activeTab, setActiveTab] = useState('dashboard');
-  
-  // پیش‌فرض باز بودن سایدبار فقط در دسکتاپ
   const [isSidebarOpen, setSidebarOpen] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   );
   
   const [isConnected, setIsConnected] = useState(false);
@@ -257,7 +253,7 @@ export default function App() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
+      if (window.innerWidth >= 768) {
         setSidebarOpen(true);
       } else {
         setSidebarOpen(false);
@@ -341,7 +337,7 @@ export default function App() {
   }, [issues, frozen, refunds]);
 
   const churnRisks = useMemo(() => {
-      const recentIssues = issues.slice(0, 100); 
+      const recentIssues = issues.slice(0, 100);
       const userCounts = {};
       
       recentIssues.forEach(i => {
@@ -379,6 +375,7 @@ export default function App() {
   const COLORS = ['#0ea5e9', '#22c55e', '#f97316', '#a855f7', '#e11d48'];
 
   // -------------------- AI Helpers --------------------
+  
   const handleAiChurnAnalysis = async (user) => {
       setAiLoading(true);
       const prompt = `
@@ -576,19 +573,34 @@ export default function App() {
     allRecords.sort((a,b) => (b.date||'').localeCompare(a.date||''));
 
     return (
-      <div className="w-full max-w-5xl ml-auto">
-        <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-white mb-6 relative z-20">
-          <h2 className="font-bold text-gray-800 mb-2">پروفایل کاربر</h2>
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="bg-white/80 backdrop-blur-md p-4 sm:p-6 rounded-3xl shadow-sm border border-white mb-6 relative z-20">
+          <h2 className="font-bold text-gray-800 mb-3 text-base sm:text-lg">پروفایل کاربر</h2>
           <div className="relative">
-            <div className="flex items-center border border-gray-200 rounded-2xl bg-gray-50/50 overflow-hidden focus-within:ring-2 ring-blue-100 transition"><div className="pl-3 pr-4 text-gray-400"><Search size={18}/></div><input placeholder="جستجو (نام، تلفن، اینستاگرام)..." value={search} className="w-full p-3 bg-transparent outline-none text-sm" onChange={(e) => handleSearch(e.target.value)} /></div>
+            <div className="flex items-center border border-gray-200 rounded-2xl bg-gray-50/50 overflow-hidden focus-within:ring-2 ring-blue-100 transition">
+              <div className="pl-3 pr-4 text-gray-400"><Search size={18}/></div>
+              <input 
+                placeholder="جستجو (نام، تلفن، اینستاگرام)..." 
+                value={search} 
+                className="w-full p-2.5 sm:p-3 bg-transparent outline-none text-xs sm:text-sm" 
+                onChange={(e) => handleSearch(e.target.value)} 
+              />
+            </div>
             {suggestions.length > 0 && (
               <div className="absolute top-full right-0 left-0 bg-white/95 backdrop-blur shadow-2xl rounded-2xl mt-2 max-h-60 overflow-auto border border-gray-100 z-50 text-right">
                 {suggestions.map((u) => (
-                  <div key={u.username} onClick={() => { setSearch(u.username); setSuggestions([]); }} className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 text-sm flex gap-3 items-center">
+                  <div 
+                    key={u.username} 
+                    onClick={() => { setSearch(u.username); setSuggestions([]); }} 
+                    className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 text-sm flex gap-3 items-center"
+                  >
                     <UserAvatar name={u.username} size="sm" />
-                    <div className="flex flex-col">
-                        <span className="font-semibold text-gray-700">{u.username}</span>
-                        <div className="flex gap-3 text-xs text-gray-400 mt-0.5">{u.phone && <span>📞 {u.phone}</span>}{u.insta && <span>📸 {u.insta}</span>}</div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-semibold text-gray-700 truncate">{u.username}</span>
+                        <div className="flex flex-wrap gap-2 sm:gap-3 text-xs text-gray-400 mt-0.5">
+                          {u.phone && <span className="truncate">📞 {u.phone}</span>}
+                          {u.insta && <span className="truncate">📸 {u.insta}</span>}
+                        </div>
                     </div>
                   </div>
                 ))}
@@ -596,344 +608,616 @@ export default function App() {
             )}
           </div>
         </div>
+        
         {selectedUserStats && (
-            <div className="bg-gradient-to-l from-blue-50/50 to-white p-6 rounded-3xl shadow-sm border border-blue-100/50 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 animate-fade-in glass-card">
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-inner"><UserAvatar name={selectedUserStats.username} size="lg"/></div>
-                <div className="flex-1 text-center sm:text-right">
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">{selectedUserStats.username}</h2>
-                    <div className="flex flex-wrap justify-center sm:justify-start gap-3">
-                        {selectedUserStats.phone && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 rounded-xl border border-gray-200 text-sm text-gray-600 shadow-sm"><Phone size={14} className="text-emerald-500"/>{selectedUserStats.phone}</span>}
-                        {selectedUserStats.insta && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 rounded-xl border border-gray-200 text-sm text-gray-600 shadow-sm dir-ltr"><Instagram size={14} className="text-rose-500"/>{selectedUserStats.insta}@</span>}
+            <div className="bg-gradient-to-l from-blue-50/50 to-white p-4 sm:p-6 rounded-3xl shadow-sm border border-blue-100/50 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 glass-card">
+                <UserAvatar name={selectedUserStats.username} size="lg"/>
+                <div className="flex-1 text-center sm:text-right min-w-0 w-full">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 truncate">{selectedUserStats.username}</h2>
+                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3">
+                        {selectedUserStats.phone && (
+                          <span className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/80 rounded-xl border border-gray-200 text-xs sm:text-sm text-gray-600 shadow-sm">
+                            <Phone size={14} className="text-emerald-500 flex-shrink-0"/>
+                            <span className="truncate max-w-[120px] sm:max-w-none">{selectedUserStats.phone}</span>
+                          </span>
+                        )}
+                        {selectedUserStats.insta && (
+                          <span className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/80 rounded-xl border border-gray-200 text-xs sm:text-sm text-gray-600 shadow-sm">
+                            <Instagram size={14} className="text-rose-500 flex-shrink-0"/>
+                            <span className="truncate max-w-[120px] sm:max-w-none dir-ltr">{selectedUserStats.insta}@</span>
+                          </span>
+                        )}
                     </div>
                 </div>
             </div>
         )}
+        
         {search && allRecords.length > 0 ? (
-          <div className="bg-white/80 backdrop-blur p-6 rounded-3xl shadow-sm border border-white">
-            <h3 className="font-semibold text-sm text-slate-800 mb-4">تاریخچه فعالیت‌ها</h3>
-            <div className="relative pr-6">
-              <div className="absolute top-2 bottom-2 right-2 w-px bg-slate-200" />
-              <div className="space-y-5">
+          <div className="bg-white/80 backdrop-blur p-4 sm:p-6 rounded-3xl shadow-sm border border-white">
+            <h3 className="font-semibold text-xs sm:text-sm text-slate-800 mb-4">تاریخچه فعالیت‌ها</h3>
+            <div className="relative pr-4 sm:pr-6">
+              <div className="absolute top-2 bottom-2 right-1.5 sm:right-2 w-px bg-slate-200" />
+              <div className="space-y-4 sm:space-y-5">
                 {allRecords.map((r, i) => (
-                  <div key={i} className="relative flex gap-4 items-start group">
-                    <div className="absolute right-0 top-3 w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow ring-2 ring-blue-100" />
-                    <div className="mr-6 flex-1 bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:bg-white hover:shadow-md transition duration-300">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                  <div key={i} className="relative flex gap-3 sm:gap-4 items-start group">
+                    <div className="absolute right-0 top-3 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-blue-500 border-2 border-white shadow ring-2 ring-blue-100" />
+                    <div className="mr-4 sm:mr-6 flex-1 bg-slate-50/60 border border-slate-100 rounded-2xl p-3 sm:p-4 hover:bg-white hover:shadow-md transition duration-300 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-slate-500">
                           <span className="font-mono">{r.date}</span>
-                          <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[10px] shadow-sm">{r.src === 'issue' ? 'مشکل فنی' : r.src === 'frozen' ? 'اکانت فریز' : r.src === 'feature' ? 'درخواست فیچر' : 'بازگشت وجه'}</span>
-                          {r.flag && <span className={`px-2 py-0.5 rounded-full text-[10px] border ${r.flag === 'پیگیری فوری' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{r.flag}</span>}
+                          <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[9px] sm:text-[10px] shadow-sm whitespace-nowrap">
+                            {r.src === 'issue' ? 'مشکل فنی' : r.src === 'frozen' ? 'اکانت فریز' : r.src === 'feature' ? 'درخواست فیچر' : 'بازگشت وجه'}
+                          </span>
+                          {r.flag && (
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] border whitespace-nowrap ${
+                              r.flag === 'پیگیری فوری' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}>
+                              {r.flag}
+                            </span>
+                          )}
                         </div>
-                        <button type="button" onClick={() => openModal(r.src === 'issue' ? 'issue' : r.src === 'frozen' ? 'frozen' : r.src === 'feature' ? 'feature' : 'refund', r)} className="text-[11px] px-3 py-1.5 rounded-full border border-gray-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition bg-white text-slate-700">ویرایش</button>
+                        <button 
+                          type="button" 
+                          onClick={() => openModal(r.src === 'issue' ? 'issue' : r.src === 'frozen' ? 'frozen' : r.src === 'feature' ? 'feature' : 'refund', r)} 
+                          className="text-[10px] sm:text-[11px] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-gray-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition bg-white text-slate-700 whitespace-nowrap self-start sm:self-auto"
+                        >
+                          ویرایش
+                        </button>
                       </div>
-                      <div className="font-semibold text-sm text-slate-800 mb-1">{r.desc_text || r.reason || r.title}</div>
-                      <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-500"><span className="px-2 py-0.5 rounded-full bg-white border border-slate-200">وضعیت: {r.status || r.action || 'نامشخص'}</span></div>
+                      <div className="font-semibold text-xs sm:text-sm text-slate-800 mb-1 break-words">{r.desc_text || r.reason || r.title}</div>
+                      <div className="flex flex-wrap items-center gap-2 mt-2 text-[10px] sm:text-[11px] text-slate-500">
+                        <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 whitespace-nowrap">
+                          وضعیت: {r.status || r.action || 'نامشخص'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        ) : search && <div className="text-center text-gray-400 text-sm mt-4">سابقه‌ای یافت نشد.</div>}
+        ) : search && <div className="text-center text-gray-400 text-xs sm:text-sm mt-4">سابقه‌ای یافت نشد.</div>}
       </div>
     );
   };
 
-  if (appPassword && !isAuthed) return <div className="fixed inset-0 w-full h-full grid place-items-center bg-gradient-to-l from-slate-100 via-slate-50 to-white" dir="rtl"><div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md border border-slate-100 relative overflow-hidden mx-4"><h1 className="text-xl font-extrabold mb-3 text-center text-slate-800">ورود به داشبورد پشتیبانی</h1><form onSubmit={handleLogin} className="space-y-4"><input type="password" className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500 bg-slate-50/60" placeholder="رمز عبور" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} />{loginError && <div className="text-xs text-red-500 text-center">{loginError}</div>}<button type="submit" className="w-full bg-gradient-to-l from-blue-600 to-sky-500 text-white rounded-xl py-2.5 text-sm font-bold shadow-md">ورود</button></form></div></div>;
+  if (appPassword && !isAuthed) {
+    return (
+      <div className="min-h-screen w-full grid place-items-center bg-gradient-to-l from-slate-100 via-slate-50 to-white p-4" dir="rtl">
+        <div className="bg-white shadow-2xl rounded-3xl p-6 sm:p-8 w-full max-w-md border border-slate-100 relative overflow-hidden">
+          <h1 className="text-lg sm:text-xl font-extrabold mb-3 text-center text-slate-800">ورود به داشبورد پشتیبانی</h1>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input 
+              type="password" 
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500 bg-slate-50/60" 
+              placeholder="رمز عبور" 
+              value={passwordInput} 
+              onChange={(e) => setPasswordInput(e.target.value)} 
+            />
+            {loginError && <div className="text-xs text-red-500 text-center">{loginError}</div>}
+            <button type="submit" className="w-full bg-gradient-to-l from-blue-600 to-sky-500 text-white rounded-xl py-2.5 text-sm font-bold shadow-md">
+              ورود
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen w-full bg-[#F3F4F6] text-right font-sans overflow-hidden relative" dir="rtl">
+    <div className="min-h-screen w-full bg-[#F3F4F6] text-right font-sans flex overflow-hidden relative" dir="rtl">
       
-      {/* 🔮 Background Blobs */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob z-0 pointer-events-none"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000 z-0 pointer-events-none"></div>
-      <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000 z-0 pointer-events-none"></div>
+      {/* Background Blobs */}
+      <div className="absolute top-0 left-0 w-72 sm:w-96 h-72 sm:h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+      <div className="absolute top-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-72 sm:w-96 h-72 sm:h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
 
-      {/* Backdrop for Mobile */}
-      {isSidebarOpen && (
-          <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm transition-opacity" />
-      )}
+      {isSidebarOpen && <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/40 z-30 md:hidden backdrop-blur-sm transition-opacity" />}
       
       {/* Sidebar */}
-      {/* اصلاحات: 
-         1. در موبایل Fixed است تا روی صفحه بیاید.
-         2. در دسکتاپ Relative است تا محتوا را هل دهد.
-         3. Z-Index بالا برای اینکه زیر المنت دیگری نرود.
-      */}
-      <aside 
-        className={`
-            fixed lg:relative inset-y-0 right-0 z-50 h-full bg-white/80 border-l border-white/50 flex flex-col 
-            transition-all duration-300 shadow-2xl lg:shadow-none backdrop-blur-xl 
-            ${isSidebarOpen ? 'translate-x-0 w-64' : 'translate-x-full lg:translate-x-0 lg:w-20'}
-        `}
-      >
-        <div className="p-5 flex items-center justify-between border-b border-gray-100/50 h-20 shrink-0">
-           {/* لوگوی کامل وقتی باز است */}
-           <div className={`${isSidebarOpen ? 'flex' : 'hidden lg:hidden'} flex-col`}>
-             <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-l from-blue-600 to-purple-600 text-xl leading-none">وردست</span>
-             <span className="text-[10px] text-slate-400 mt-1">داشبورد هوشمند</span>
+      <aside className={`fixed inset-y-0 right-0 z-40 h-full bg-white/90 border-l border-white/50 flex flex-col transition-transform duration-300 shadow-2xl backdrop-blur-xl md:relative ${isSidebarOpen ? 'translate-x-0 w-64' : 'translate-x-full md:translate-x-0 md:w-20'}`}>
+        <div className="p-4 sm:p-5 flex items-center justify-between border-b border-gray-100/50 flex-shrink-0">
+           <div className={`${isSidebarOpen ? 'block' : 'hidden md:hidden'} flex flex-col`}>
+             <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-l from-blue-600 to-purple-600 text-lg sm:text-xl leading-none">وردست</span>
+             <span className="text-[9px] sm:text-[10px] text-slate-400 mt-1">داشبورد هوشمند</span>
            </div>
-           
-           {/* لوگوی کوچک وقتی بسته است */}
-           <div className={`hidden lg:flex flex-col ${isSidebarOpen ? 'hidden' : 'flex'} items-center w-full`}>
+           <div className={`hidden md:flex flex-col ${!isSidebarOpen && 'md:hidden'}`}>
              <span className="font-extrabold text-blue-700 text-lg leading-none">V</span>
            </div>
-
-          <button onClick={() => setSidebarOpen(!isSidebarOpen)} className={`p-2 hover:bg-slate-50 rounded-xl border border-slate-100 transition text-slate-600 ${!isSidebarOpen && 'mx-auto'}`}>
-             {isSidebarOpen ? <X size={20} className="lg:hidden"/> : <Menu size={20} />}
-             <Menu size={20} className="hidden lg:block"/>
+          <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-slate-50 rounded-xl border border-slate-100 mr-auto transition flex-shrink-0">
+            {isSidebarOpen ? <X size={18} className="md:hidden"/> : <Menu size={18} />}
+            <Menu size={18} className="hidden md:block"/>
           </button>
         </div>
-
-        <nav className="flex-1 p-3 space-y-2 overflow-y-auto custom-scrollbar">
-            {[{ id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard }, { id: 'issues', label: 'مشکلات فنی', icon: AlertTriangle }, { id: 'frozen', label: 'اکانت فریز', icon: Snowflake }, { id: 'features', label: 'درخواست فیچر', icon: Lightbulb }, { id: 'refunds', label: 'بازگشت وجه', icon: CreditCard }, { id: 'profile', label: 'پروفایل کاربر', icon: User }].map((i) => (
-                <button key={i.id} onClick={() => { setActiveTab(i.id); if(window.innerWidth < 1024) setSidebarOpen(false); }} 
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all whitespace-nowrap overflow-hidden
-                    ${activeTab === i.id ? 'bg-gradient-to-l from-blue-50 to-white text-blue-700 font-bold border border-blue-100 shadow-sm' : 'text-slate-600 hover:bg-white/50'}`}
-                    title={!isSidebarOpen ? i.label : ''}
+        <nav className="flex-1 p-2 sm:p-3 space-y-1 overflow-y-auto custom-scrollbar">
+            {[
+              { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard }, 
+              { id: 'issues', label: 'مشکلات فنی', icon: AlertTriangle }, 
+              { id: 'frozen', label: 'اکانت فریز', icon: Snowflake }, 
+              { id: 'features', label: 'درخواست فیچر', icon: Lightbulb }, 
+              { id: 'refunds', label: 'بازگشت وجه', icon: CreditCard }, 
+              { id: 'profile', label: 'پروفایل کاربر', icon: User }
+            ].map((i) => (
+                <button 
+                  key={i.id} 
+                  onClick={() => { setActiveTab(i.id); if(window.innerWidth < 768) setSidebarOpen(false); }} 
+                  className={`w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm transition-all whitespace-nowrap overflow-hidden ${
+                    activeTab === i.id 
+                      ? 'bg-gradient-to-l from-blue-50 to-white text-blue-700 font-bold border border-blue-100 shadow-sm' 
+                      : 'text-slate-600 hover:bg-white/50'
+                  }`}
                 >
-                    <i.icon size={20} className="shrink-0" />
-                    <span className={`${!isSidebarOpen && 'lg:hidden'} transition-opacity duration-200`}>{i.label}</span>
+                    <i.icon size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
+                    <span className={`${!isSidebarOpen && 'md:hidden'} transition-opacity duration-200`}>{i.label}</span>
                 </button>
             ))}
         </nav>
-        
-        <div className="p-4 text-xs text-center text-gray-400 border-t border-gray-100 shrink-0">
-            {isConnected ? (
-                <span className="text-emerald-600 flex justify-center gap-1 font-bold items-center">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                    <span className={`${!isSidebarOpen && 'lg:hidden'}`}>آنلاین</span>
-                </span> 
-            ) : 'Off'}
+        <div className="p-3 sm:p-4 text-[10px] sm:text-xs text-center text-gray-400 border-t border-gray-100 flex-shrink-0">
+          {isConnected ? (
+            <span className="text-emerald-600 flex justify-center gap-1 font-bold items-center">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              <span className={`${!isSidebarOpen && 'md:hidden'}`}>آنلاین</span>
+            </span>
+          ) : 'Off'}
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      {/* اصلاح شده: استفاده از flex-1 و overflow-hidden برای جلوگیری از اسکرول کل صفحه */}
-      <main className="flex-1 flex flex-col h-full relative z-10 overflow-hidden w-full">
-        
-        {/* Header */}
-        <header className="flex items-center justify-between px-4 sm:px-8 py-5 bg-[#F3F4F6]/80 backdrop-blur-sm z-20 shrink-0">
-          <div className="flex items-center gap-3">
-              <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-600">
-                  <Menu size={20} />
-              </button>
-              <div className="flex flex-col gap-1">
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800">داشبورد پشتیبانی</h1>
-              </div>
+      <main className="flex-1 w-full min-h-screen overflow-y-auto overflow-x-hidden px-3 sm:px-6 lg:px-10 py-4 sm:py-6 relative z-10">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-600 flex-shrink-0">
+              <Menu size={18} />
+            </button>
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
+              <h1 className="text-lg sm:text-2xl font-extrabold text-slate-800 truncate">داشبورد پشتیبانی</h1>
+            </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500">
-              <span className="px-3 py-1.5 rounded-full bg-white/60 backdrop-blur border border-white shadow-sm font-medium">
-                  {new Date().toLocaleDateString('fa-IR', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' })}
-              </span>
+          <div className="hidden sm:flex items-center gap-2 text-[10px] sm:text-[11px] text-slate-500">
+            <span className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/60 backdrop-blur border border-white shadow-sm font-medium whitespace-nowrap">
+              امروز {new Date().toLocaleDateString('fa-IR', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' })}
+            </span>
           </div>
         </header>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-8 pb-10 custom-scrollbar">
-            
-            {activeTab === 'dashboard' && (
-              <section className="space-y-6">
-                 {/* Cards Row */}
-                 {/* اصلاح شده: استفاده از min-h برای جلوگیری از له شدن محتوا در موبایل */}
-                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                  {[
-                      { title: 'نرخ حل مشکلات', value: `%${analytics.solvedRatio}`, sub: 'بسته شده', color: 'from-emerald-500 to-teal-400', icon: CheckCircle2 },
-                      { title: 'اکانت‌های فریز', value: analytics.activeFrozen, sub: 'کاربر فعال', color: 'from-blue-500 to-indigo-400', icon: Snowflake },
-                      { title: 'بازگشت وجه', value: analytics.refundCount, sub: 'درخواست', color: 'from-rose-500 to-pink-400', icon: CreditCard },
-                      { title: 'کل تیکت‌ها', value: issues.length, sub: 'ثبت شده', color: 'from-slate-700 to-slate-500', icon: Activity }
-                  ].map((card, idx) => (
-                      <div key={idx} className="bg-white/70 backdrop-blur-xl p-5 rounded-3xl shadow-sm border border-white flex flex-col justify-between min-h-[140px] relative overflow-hidden group hover:shadow-md transition duration-300">
-                          <div className={`absolute -right-6 -top-6 p-4 rounded-full bg-gradient-to-br ${card.color} opacity-10 group-hover:opacity-20 transition-all scale-150`}>
-                              <card.icon size={60} />
-                          </div>
-                          <span className="text-xs font-semibold text-gray-500 z-10">{card.title}</span>
-                          <div className="flex items-end gap-2 z-10 mt-4">
-                              <h3 className="text-3xl font-black text-slate-800">{card.value}</h3>
-                              <span className="text-[10px] text-gray-400 mb-1.5">{card.sub}</span>
-                          </div>
+        {activeTab === 'dashboard' && (
+          <section className="space-y-4 sm:space-y-6">
+             {/* Cards Row */}
+             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {[
+                  { title: 'نرخ حل مشکلات', value: `%${analytics.solvedRatio}`, sub: 'بسته شده', color: 'from-emerald-500 to-teal-400', icon: CheckCircle2 },
+                  { title: 'اکانت‌های فریز', value: analytics.activeFrozen, sub: 'کاربر فعال', color: 'from-blue-500 to-indigo-400', icon: Snowflake },
+                  { title: 'بازگشت وجه', value: analytics.refundCount, sub: 'درخواست', color: 'from-rose-500 to-pink-400', icon: CreditCard },
+                  { title: 'کل تیکت‌ها', value: issues.length, sub: 'ثبت شده', color: 'from-slate-700 to-slate-500', icon: Activity }
+              ].map((card, idx) => (
+                  <div key={idx} className="bg-white/70 backdrop-blur-xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-white flex flex-col justify-between h-24 sm:h-32 relative overflow-hidden group hover:shadow-md transition duration-300">
+                      <div className={`absolute -right-4 sm:-right-6 -top-4 sm:-top-6 p-3 sm:p-4 rounded-full bg-gradient-to-br ${card.color} opacity-10 group-hover:opacity-20 transition-all scale-150`}>
+                          <card.icon size={40} className="sm:w-[60px] sm:h-[60px]" />
                       </div>
-                  ))}
-                </div>
+                      <span className="text-[10px] sm:text-xs font-semibold text-gray-500 z-10">{card.title}</span>
+                      <div className="flex items-end gap-1 sm:gap-2 z-10">
+                          <h3 className="text-xl sm:text-3xl font-black text-slate-800">{card.value}</h3>
+                          <span className="text-[9px] sm:text-[10px] text-gray-400 mb-0.5 sm:mb-1.5">{card.sub}</span>
+                      </div>
+                  </div>
+              ))}
+            </div>
 
-                {/* Churn & Charts Row */}
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                    
-                    {/* Risk Widget */}
-                    <div className="xl:col-span-1 bg-white/70 backdrop-blur-xl p-5 rounded-3xl shadow-sm border border-red-100 flex flex-col h-[400px]">
-                        <h4 className="font-bold text-gray-700 text-sm mb-4 flex items-center gap-2 shrink-0">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-500"><AlertCircle size={14}/></span>
-                            ریسک ریزش کاربر (هفته جاری)
-                        </h4>
-                        <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
-                            {churnRisks.length === 0 ? (
-                                <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
-                                    <CheckCircle2 size={40} className="mb-2 text-emerald-500" />
-                                    <span className="text-xs">هیچ کاربری در خطر نیست!</span>
-                                </div>
-                            ) : (
-                                churnRisks.map((user, idx) => (
-                                    <div key={idx} className="flex flex-col gap-2 bg-white border border-red-50 p-3 rounded-2xl shadow-sm hover:shadow-md transition">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 overflow-hidden">
-                                                <UserAvatar name={user.username} size="sm"/>
-                                                <span className="font-bold text-sm text-gray-800 truncate">{user.username}</span>
-                                            </div>
-                                            <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-lg text-[10px] font-bold border border-red-100 shrink-0">{user.count} خطا</span>
+            {/* Churn & Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                
+                {/* Churn Risk Widget */}
+                <div className="lg:col-span-1 bg-white/70 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-red-100 flex flex-col h-[300px] sm:h-[350px]">
+                    <h4 className="font-bold text-gray-700 text-xs sm:text-sm mb-3 sm:mb-4 flex items-center gap-2">
+                        <span className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-100 text-red-500 flex-shrink-0">
+                          <AlertCircle size={12} className="sm:w-[14px] sm:h-[14px]"/>
+                        </span>
+                        <span className="truncate">ریسک ریزش کاربر (هفته جاری)</span>
+                    </h4>
+                    <div className="flex-1 overflow-y-auto space-y-2 sm:space-y-3 pr-1 custom-scrollbar">
+                        {churnRisks.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                                <CheckCircle2 size={32} className="sm:w-[40px] sm:h-[40px] mb-2 text-emerald-500" />
+                                <span className="text-[10px] sm:text-xs">هیچ کاربری در خطر نیست!</span>
+                            </div>
+                        ) : (
+                            churnRisks.map((user, idx) => (
+                                <div key={idx} className="flex flex-col gap-2 bg-white border border-red-50 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md transition min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            <UserAvatar name={user.username} size="sm"/>
+                                            <span className="font-bold text-xs sm:text-sm text-gray-800 truncate">{user.username}</span>
                                         </div>
-                                        <div className="flex justify-end">
-                                            <button 
-                                                onClick={() => handleAiChurnAnalysis(user)}
-                                                className="flex items-center gap-1 text-[10px] text-purple-600 bg-purple-50 hover:bg-purple-600 hover:text-white border border-purple-100 px-3 py-1.5 rounded-lg transition w-full justify-center"
-                                            >
-                                                {aiLoading ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}
-                                                تحلیل هوشمند علت
-                                            </button>
-                                        </div>
+                                        <span className="bg-red-50 text-red-600 px-1.5 sm:px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-bold border border-red-100 whitespace-nowrap flex-shrink-0">
+                                          {user.count} خطا
+                                        </span>
                                     </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Charts */}
-                    <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 h-[400px]">
-                          <div className="bg-white/70 backdrop-blur-xl p-5 rounded-3xl shadow-sm border border-white flex flex-col min-h-[300px]">
-                            <h4 className="font-bold text-gray-700 text-sm mb-4 flex items-center gap-2 shrink-0"><TrendingUp size={16} className="text-blue-500"/>روند ثبت مشکلات</h4>
-                            <div className="flex-1 w-full min-h-0">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                            </linearGradient>
-                                        </defs>
-                                        <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                                        <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)'}} />
-                                        <Area type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorCount)" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                          <div className="bg-white/70 backdrop-blur-xl p-5 rounded-3xl shadow-sm border border-white flex flex-col min-h-[300px]">
-                            <h4 className="font-bold text-gray-700 text-sm mb-4 shrink-0">دلایل بازگشت وجه</h4>
-                            <div className="flex-1 w-full min-h-0">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={pieChartData} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5}>
-                                            {pieChartData.map((e, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} stroke="white" strokeWidth={2} />))}
-                                        </Pie>
-                                        <Tooltip contentStyle={{borderRadius: '12px'}} />
-                                        <Legend wrapperStyle={{ fontSize: '10px' }} iconType="circle" />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-              </section>
-            )}
-
-            {activeTab === 'profile' && <UserProfile />}
-
-            {['issues', 'frozen', 'features', 'refunds'].includes(activeTab) && (
-              <section className="mt-4">
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-white p-4 sm:p-6 min-h-[60vh]">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-                    <div className="flex flex-col gap-1"><h2 className="font-bold text-lg text-gray-800">{activeTab === 'issues' ? 'مشکلات فنی' : activeTab === 'frozen' ? 'اکانت فریز' : activeTab === 'features' ? 'درخواست فیچر' : 'بازگشت وجه'}</h2><p className="text-[10px] sm:text-[11px] text-slate-500">لیست کامل داده‌ها</p></div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                      <button onClick={() => downloadCSV(activeTab === 'issues' ? issues : activeTab === 'frozen' ? frozen : activeTab === 'features' ? features : refunds, activeTab)} className="flex-1 md:flex-none justify-center border border-gray-200 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-gray-50 transition bg-white text-gray-600 font-medium"><Download size={16} /><span className="hidden sm:inline">خروجی CSV</span></button>
-                      <button onClick={() => openModal(activeTab === 'issues' ? 'issue' : activeTab === 'frozen' ? 'frozen' : activeTab === 'features' ? 'feature' : 'refund')} className="flex-1 md:flex-none justify-center bg-blue-600 text-white px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm flex gap-2 items-center hover:bg-blue-700 shadow-lg shadow-blue-200 transition font-bold"><Plus size={16} /> ثبت جدید</button>
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-sm custom-scrollbar">
-                    <table className="w-full text-sm text-right min-w-[700px]">
-                      <thead className="bg-slate-50/50 text-gray-500 border-b border-gray-100"><tr><th className="p-4 font-medium">تاریخ</th><th className="p-4 font-medium">کاربر</th><th className="p-4 font-medium">توضیحات</th><th className="p-4 font-medium">وضعیت</th><th className="p-4 font-medium">اقدام</th></tr></thead>
-                      <tbody className="bg-white divide-y divide-gray-50">
-                        {(activeTab === 'issues' ? issues : activeTab === 'frozen' ? frozen : activeTab === 'features' ? features : refunds).map((row) => (
-                          <tr key={row.id} className={`transition hover:bg-blue-50/30 ${row.flag === 'پیگیری فوری' ? 'bg-red-50/50' : row.flag === 'پیگیری مهم' ? 'bg-amber-50/50' : ''}`}>
-                            <td className="p-4 text-gray-500 text-xs whitespace-nowrap font-mono">{row.created_at || row.frozen_at || row.requested_at}</td>
-                            <td className="p-4">
-                                <div className="flex items-center gap-3">
-                                    <UserAvatar name={row.username} size="sm" />
-                                    <span className="font-bold text-gray-700 text-xs sm:text-sm">{row.username}</span>
+                                    <button 
+                                        onClick={() => handleAiChurnAnalysis(user)}
+                                        className="flex items-center justify-center gap-1 text-[9px] sm:text-[10px] text-purple-600 bg-purple-50 hover:bg-purple-600 hover:text-white border border-purple-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg transition w-full"
+                                    >
+                                        {aiLoading ? <Loader2 size={10} className="sm:w-3 sm:h-3 animate-spin"/> : <Sparkles size={10} className="sm:w-3 sm:h-3"/>}
+                                        تحلیل هوشمند علت
+                                    </button>
                                 </div>
-                            </td>
-                            <td className="p-4 max-w-[150px] sm:max-w-md truncate text-gray-600 text-xs sm:text-sm" title={row.desc_text || row.reason || row.title}>{row.desc_text || row.reason || row.title}</td>
-                            <td className="p-4 text-xs sm:text-sm"><span className={`px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold whitespace-nowrap shadow-sm border ${row.status === 'حل‌شده' || row.status === 'انجام شد' || row.action === 'بازپرداخت شد' || row.status === 'رفع شد' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-white text-slate-600 border-slate-200'}`}>{row.status || row.action}</span></td>
-                            <td className="p-4 text-left text-xs sm:text-sm"><button type="button" onClick={() => openModal(activeTab === 'issues' ? 'issue' : activeTab === 'frozen' ? 'frozen' : activeTab === 'features' ? 'feature' : 'refund', row)} className="text-xs px-3 py-1.5 rounded-full border border-gray-200 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition bg-white text-slate-500 font-medium whitespace-nowrap">ویرایش</button></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                            ))
+                        )}
+                    </div>
                 </div>
-              </section>
-            )}
-        </div>
+
+                {/* Charts */}
+                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 h-[300px] sm:h-[350px]">
+                     <div className="bg-white/70 backdrop-blur-xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-white flex flex-col">
+                        <h4 className="font-bold text-gray-700 text-xs sm:text-sm mb-3 sm:mb-4 flex items-center gap-2">
+                          <TrendingUp size={14} className="sm:w-4 sm:h-4 text-blue-500 flex-shrink-0"/>
+                          <span>روند ثبت مشکلات</span>
+                        </h4>
+                        <div className="flex-1 w-full h-full min-h-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis dataKey="date" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
+                                    <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: '11px'}} />
+                                    <Area type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                     <div className="bg-white/70 backdrop-blur-xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-white flex flex-col">
+                        <h4 className="font-bold text-gray-700 text-xs sm:text-sm mb-3 sm:mb-4">دلایل بازگشت وجه</h4>
+                        <div className="flex-1 w-full h-full min-h-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={pieChartData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={5}>
+                                        {pieChartData.map((e, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} stroke="white" strokeWidth={2} />))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{borderRadius: '12px', fontSize: '11px'}} />
+                                    <Legend wrapperStyle={{ fontSize: '9px' }} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'profile' && <UserProfile />}
+
+        {['issues', 'frozen', 'features', 'refunds'].includes(activeTab) && (
+          <section className="mt-4">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-sm border border-white p-3 sm:p-6 min-h-[60vh]">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 sm:mb-6">
+                <div className="flex flex-col gap-1">
+                  <h2 className="font-bold text-base sm:text-lg text-gray-800">
+                    {activeTab === 'issues' ? 'مشکلات فنی' : activeTab === 'frozen' ? 'اکانت فریز' : activeTab === 'features' ? 'درخواست فیچر' : 'بازگشت وجه'}
+                  </h2>
+                  <p className="text-[10px] sm:text-[11px] text-slate-500">لیست کامل داده‌ها</p>
+                </div>
+                <div className="flex gap-2 w-full lg:w-auto">
+                  <button 
+                    onClick={() => downloadCSV(
+                      activeTab === 'issues' ? issues : activeTab === 'frozen' ? frozen : activeTab === 'features' ? features : refunds, 
+                      activeTab
+                    )} 
+                    className="flex-1 lg:flex-none justify-center border border-gray-200 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm flex gap-1.5 sm:gap-2 items-center hover:bg-gray-50 transition bg-white text-gray-600 font-medium"
+                  >
+                    <Download size={14} className="sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">خروجی CSV</span>
+                    <span className="sm:hidden">CSV</span>
+                  </button>
+                  <button 
+                    onClick={() => openModal(
+                      activeTab === 'issues' ? 'issue' : activeTab === 'frozen' ? 'frozen' : activeTab === 'features' ? 'feature' : 'refund'
+                    )} 
+                    className="flex-1 lg:flex-none justify-center bg-blue-600 text-white px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm flex gap-1.5 sm:gap-2 items-center hover:bg-blue-700 shadow-lg shadow-blue-200 transition font-bold"
+                  >
+                    <Plus size={14} className="sm:w-4 sm:h-4" />
+                    ثبت جدید
+                  </button>
+                </div>
+              </div>
+              <div className="overflow-x-auto rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm -mx-3 sm:mx-0">
+                <table className="w-full text-xs sm:text-sm text-right min-w-[600px]">
+                  <thead className="bg-slate-50/50 text-gray-500 border-b border-gray-100">
+                    <tr>
+                      <th className="p-2 sm:p-4 font-medium text-[10px] sm:text-sm">تاریخ</th>
+                      <th className="p-2 sm:p-4 font-medium text-[10px] sm:text-sm">کاربر</th>
+                      <th className="p-2 sm:p-4 font-medium text-[10px] sm:text-sm">توضیحات</th>
+                      <th className="p-2 sm:p-4 font-medium text-[10px] sm:text-sm">وضعیت</th>
+                      <th className="p-2 sm:p-4 font-medium text-[10px] sm:text-sm">اقدام</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-50">
+                    {(activeTab === 'issues' ? issues : activeTab === 'frozen' ? frozen : activeTab === 'features' ? features : refunds).map((row) => (
+                      <tr key={row.id} className={`transition hover:bg-blue-50/30 ${row.flag === 'پیگیری فوری' ? 'bg-red-50/50' : row.flag === 'پیگیری مهم' ? 'bg-amber-50/50' : ''}`}>
+                        <td className="p-2 sm:p-4 text-gray-500 text-[10px] sm:text-xs whitespace-nowrap font-mono">
+                          {row.created_at || row.frozen_at || row.requested_at}
+                        </td>
+                        <td className="p-2 sm:p-4">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <UserAvatar name={row.username} size="sm" />
+                                <span className="font-bold text-gray-700 text-[11px] sm:text-sm truncate max-w-[100px] sm:max-w-none">
+                                  {row.username}
+                                </span>
+                            </div>
+                        </td>
+                        <td className="p-2 sm:p-4 max-w-[120px] sm:max-w-md truncate text-gray-600 text-[10px] sm:text-sm" title={row.desc_text || row.reason || row.title}>
+                          {row.desc_text || row.reason || row.title}
+                        </td>
+                        <td className="p-2 sm:p-4">
+                          <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-bold whitespace-nowrap shadow-sm border ${
+                            row.status === 'حل‌شده' || row.status === 'انجام شد' || row.action === 'بازپرداخت شد' || row.status === 'رفع شد' 
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                              : 'bg-white text-slate-600 border-slate-200'
+                          }`}>
+                            {row.status || row.action}
+                          </span>
+                        </td>
+                        <td className="p-2 sm:p-4 text-left">
+                          <button 
+                            type="button" 
+                            onClick={() => openModal(
+                              activeTab === 'issues' ? 'issue' : activeTab === 'frozen' ? 'frozen' : activeTab === 'features' ? 'feature' : 'refund', 
+                              row
+                            )} 
+                            className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-gray-200 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition bg-white text-slate-500 font-medium whitespace-nowrap"
+                          >
+                            ویرایش
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-[60] p-4">
-          <div className="bg-white/95 backdrop-blur w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-white max-h-[90vh] flex flex-col animate-fade-in-up">
-            <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-sm sm:text-base text-gray-800">{editingId ? 'ویرایش گزارش' : 'ثبت مورد جدید'}</h3>
-              <button onClick={() => { setIsModalOpen(false); setEditingId(null); }} className="text-gray-400 hover:text-red-500 transition"><X size={20} /></button>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-50 p-3 sm:p-4">
+          <div className="bg-white/95 backdrop-blur w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-white max-h-[90vh] flex flex-col">
+            <div className="p-3 sm:p-5 border-b border-gray-100 flex justify-between items-center shrink-0">
+              <h3 className="font-bold text-sm sm:text-base text-gray-800">
+                {editingId ? 'ویرایش گزارش' : 'ثبت مورد جدید'}
+              </h3>
+              <button 
+                onClick={() => { setIsModalOpen(false); setEditingId(null); }} 
+                className="text-gray-400 hover:text-red-500 transition flex-shrink-0"
+              >
+                <X size={18} className="sm:w-5 sm:h-5" />
+              </button>
             </div>
-            <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-4 overflow-y-auto grow custom-scrollbar">
-              <div className="space-y-1"><label className="text-xs text-gray-500 font-medium">نام کاربری</label><input required value={formData.username || ''} onChange={(e) => setFormData({ ...formData, username: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition bg-slate-50/50 text-sm" /></div>
-              <div className="grid grid-cols-2 gap-3">
-                 <div className="space-y-1"><label className="text-xs text-gray-500 font-medium">شماره تماس</label><input placeholder="0912..." value={formData.phone_number || ''} onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-white text-sm" /></div>
-                 <div className="space-y-1"><label className="text-xs text-gray-500 font-medium">اینستاگرام</label><input placeholder="username" value={formData.instagram_username || ''} onChange={(e) => setFormData({ ...formData, instagram_username: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-white text-sm" /></div>
+            <form onSubmit={handleSave} className="p-3 sm:p-6 space-y-3 sm:space-y-4 overflow-y-auto grow custom-scrollbar">
+              <div className="space-y-1">
+                <label className="text-[10px] sm:text-xs text-gray-500 font-medium">نام کاربری</label>
+                <input 
+                  required 
+                  value={formData.username || ''} 
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })} 
+                  className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition bg-slate-50/50 text-xs sm:text-sm" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                 <div className="space-y-1">
+                   <label className="text-[10px] sm:text-xs text-gray-500 font-medium">شماره تماس</label>
+                   <input 
+                     placeholder="0912..." 
+                     value={formData.phone_number || ''} 
+                     onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })} 
+                     className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl outline-none focus:border-blue-500 bg-white text-xs sm:text-sm" 
+                   />
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-[10px] sm:text-xs text-gray-500 font-medium">اینستاگرام</label>
+                   <input 
+                     placeholder="username" 
+                     value={formData.instagram_username || ''} 
+                     onChange={(e) => setFormData({ ...formData, instagram_username: e.target.value })} 
+                     className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl outline-none focus:border-blue-500 bg-white text-xs sm:text-sm" 
+                   />
+                 </div>
               </div>
               <div className="border-b border-gray-100 my-2"></div>
 
               {modalType === 'issue' && (
                 <>
-                  <div className="space-y-1"><label className="text-xs text-gray-500 font-medium">وضعیت</label>
-                  <select value={formData.status || 'باز'} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none">
-                      <option value="باز">باز</option><option value="در حال بررسی">در حال بررسی</option><option value="حل‌شده">حل‌شده</option>
-                  </select></div>
-                  <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><label className="text-xs text-gray-500 font-medium">وضعیت اشتراک</label><select value={formData.subscription_status || ''} onChange={(e) => setFormData({ ...formData, subscription_status: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"><option value="">انتخاب...</option><option value="Active">Active</option><option value="Paused">Paused</option><option value="Expired">Expired</option></select></div><div className="space-y-1"><label className="text-xs text-gray-500 font-medium">پشتیبان</label><input value={formData.support || ''} onChange={(e) => setFormData({ ...formData, support: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" /></div></div>
-                  <div className="relative space-y-1"><label className="text-xs text-gray-500 font-medium">شرح مشکل</label><textarea rows="3" value={formData.desc_text || ''} onChange={(e) => setFormData({ ...formData, desc_text: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-white text-sm"></textarea><button type="button" onClick={handleSmartAnalysis} className="absolute bottom-3 left-3 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] px-3 py-1.5 rounded-lg flex gap-1 items-center border border-purple-100 transition">{aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}تحلیل</button></div>
-                  <div className="space-y-1"><label className="text-xs text-gray-500 font-medium">یادداشت فنی</label><textarea rows="2" value={formData.technical_note || ''} onChange={(e) => setFormData({ ...formData, technical_note: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"></textarea></div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs text-gray-500 font-medium">وضعیت</label>
+                    <select 
+                      value={formData.status || 'باز'} 
+                      onChange={(e) => setFormData({...formData, status: e.target.value})} 
+                      className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none"
+                    >
+                        <option value="باز">باز</option>
+                        <option value="در حال بررسی">در حال بررسی</option>
+                        <option value="حل‌شده">حل‌شده</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] sm:text-xs text-gray-500 font-medium">وضعیت اشتراک</label>
+                      <select 
+                        value={formData.subscription_status || ''} 
+                        onChange={(e) => setFormData({ ...formData, subscription_status: e.target.value })} 
+                        className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none"
+                      >
+                        <option value="">انتخاب...</option>
+                        <option value="Active">Active</option>
+                        <option value="Paused">Paused</option>
+                        <option value="Expired">Expired</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] sm:text-xs text-gray-500 font-medium">پشتیبان</label>
+                      <input 
+                        value={formData.support || ''} 
+                        onChange={(e) => setFormData({ ...formData, support: e.target.value })} 
+                        className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none" 
+                      />
+                    </div>
+                  </div>
+                  <div className="relative space-y-1">
+                    <label className="text-[10px] sm:text-xs text-gray-500 font-medium">شرح مشکل</label>
+                    <textarea 
+                      rows="3" 
+                      value={formData.desc_text || ''} 
+                      onChange={(e) => setFormData({ ...formData, desc_text: e.target.value })} 
+                      className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl outline-none focus:border-blue-500 bg-white text-xs sm:text-sm"
+                    ></textarea>
+                    <button 
+                      type="button" 
+                      onClick={handleSmartAnalysis} 
+                      className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] sm:text-[11px] px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex gap-1 items-center border border-purple-100 transition"
+                    >
+                      {aiLoading ? <Loader2 size={12} className="sm:w-[14px] sm:h-[14px] animate-spin" /> : <Sparkles size={12} className="sm:w-[14px] sm:h-[14px]" />}
+                      تحلیل
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs text-gray-500 font-medium">یادداشت فنی</label>
+                    <textarea 
+                      rows="2" 
+                      value={formData.technical_note || ''} 
+                      onChange={(e) => setFormData({ ...formData, technical_note: e.target.value })} 
+                      className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none"
+                    ></textarea>
+                  </div>
                 </>
               )}
+              
               {modalType === 'frozen' && (
-                <div className="space-y-3">
-                  <div className="space-y-1"><label className="text-xs text-gray-500 font-medium">وضعیت</label>
-                  <select value={formData.status || 'فریز'} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none">
-                      <option value="فریز">فریز</option><option value="در حال رفع">در حال رفع</option><option value="رفع شد">رفع شد</option>
-                  </select></div>
-                  <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><label className="text-xs text-gray-500 font-medium">ماژول</label><input value={formData.module || ''} onChange={(e) => setFormData({ ...formData, module: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" /></div><div className="space-y-1"><label className="text-xs text-gray-500 font-medium">علت</label><input value={formData.cause || ''} onChange={(e) => setFormData({ ...formData, cause: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" /></div></div>
-                  <textarea placeholder="توضیحات تکمیلی..." value={formData.desc_text || ''} onChange={(e) => setFormData({...formData, desc_text: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" />
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs text-gray-500 font-medium">وضعیت</label>
+                    <select 
+                      value={formData.status || 'فریز'} 
+                      onChange={(e) => setFormData({...formData, status: e.target.value})} 
+                      className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none"
+                    >
+                        <option value="فریز">فریز</option>
+                        <option value="در حال رفع">در حال رفع</option>
+                        <option value="رفع شد">رفع شد</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] sm:text-xs text-gray-500 font-medium">ماژول</label>
+                      <input 
+                        value={formData.module || ''} 
+                        onChange={(e) => setFormData({ ...formData, module: e.target.value })} 
+                        className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] sm:text-xs text-gray-500 font-medium">علت</label>
+                      <input 
+                        value={formData.cause || ''} 
+                        onChange={(e) => setFormData({ ...formData, cause: e.target.value })} 
+                        className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none" 
+                      />
+                    </div>
+                  </div>
+                  <textarea 
+                    placeholder="توضیحات تکمیلی..." 
+                    value={formData.desc_text || ''} 
+                    onChange={(e) => setFormData({...formData, desc_text: e.target.value})} 
+                    className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none" 
+                  />
                 </div>
               )}
+              
                {modalType === 'feature' && (
-                <div className="space-y-3">
-                  <div className="space-y-1"><label className="text-xs text-gray-500 font-medium">وضعیت</label>
-                  <select value={formData.status || 'بررسی نشده'} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none">
-                      <option value="بررسی نشده">بررسی نشده</option><option value="در تحلیل">در تحلیل</option><option value="در توسعه">در توسعه</option><option value="انجام شد">انجام شد</option>
-                  </select></div>
-                  <input placeholder="عنوان فیچر" value={formData.title || ''} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" />
-                  <textarea placeholder="شرح..." value={formData.desc_text || ''} onChange={(e) => setFormData({...formData, desc_text: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" />
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs text-gray-500 font-medium">وضعیت</label>
+                    <select 
+                      value={formData.status || 'بررسی نشده'} 
+                      onChange={(e) => setFormData({...formData, status: e.target.value})} 
+                      className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none"
+                    >
+                        <option value="بررسی نشده">بررسی نشده</option>
+                        <option value="در تحلیل">در تحلیل</option>
+                        <option value="در توسعه">در توسعه</option>
+                        <option value="انجام شد">انجام شد</option>
+                    </select>
+                  </div>
+                  <input 
+                    placeholder="عنوان فیچر" 
+                    value={formData.title || ''} 
+                    onChange={(e) => setFormData({...formData, title: e.target.value})} 
+                    className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none" 
+                  />
+                  <textarea 
+                    placeholder="شرح..." 
+                    value={formData.desc_text || ''} 
+                    onChange={(e) => setFormData({...formData, desc_text: e.target.value})} 
+                    className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none" 
+                  />
                 </div>
               )}
+              
                {modalType === 'refund' && (
-                <div className="space-y-3">
-                  <div className="space-y-1"><label className="text-xs text-gray-500 font-medium">وضعیت</label>
-                  <select value={formData.action || 'در حال بررسی'} onChange={(e) => setFormData({...formData, action: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none">
-                      <option value="در حال بررسی">در حال بررسی</option><option value="بازپرداخت شد">بازپرداخت شد</option><option value="رد شد">رد شد</option>
-                  </select></div>
-                  <textarea placeholder="دلیل..." rows="3" value={formData.reason || ''} onChange={(e) => setFormData({...formData, reason: e.target.value})} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none" />
-                   <button type="button" onClick={handleRefundAI} className="bg-purple-50 text-purple-600 text-[11px] w-full py-2.5 rounded-xl flex justify-center gap-1 items-center border border-purple-100 hover:bg-purple-100 transition"><Sparkles size={14} /> پیشنهاد متن</button>
-                   {formData.suggestion && <div className="text-[11px] bg-purple-50 p-3 rounded-xl border border-purple-100 text-purple-800">{formData.suggestion}</div>}
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] sm:text-xs text-gray-500 font-medium">وضعیت</label>
+                    <select 
+                      value={formData.action || 'در حال بررسی'} 
+                      onChange={(e) => setFormData({...formData, action: e.target.value})} 
+                      className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none"
+                    >
+                        <option value="در حال بررسی">در حال بررسی</option>
+                        <option value="بازپرداخت شد">بازپرداخت شد</option>
+                        <option value="رد شد">رد شد</option>
+                    </select>
+                  </div>
+                  <textarea 
+                    placeholder="دلیل..." 
+                    rows="3" 
+                    value={formData.reason || ''} 
+                    onChange={(e) => setFormData({...formData, reason: e.target.value})} 
+                    className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none" 
+                  />
+                   <button 
+                     type="button" 
+                     onClick={handleRefundAI} 
+                     className="bg-purple-50 text-purple-600 text-[10px] sm:text-[11px] w-full py-2 sm:py-2.5 rounded-xl flex justify-center gap-1 items-center border border-purple-100 hover:bg-purple-100 transition"
+                   >
+                     <Sparkles size={12} className="sm:w-[14px] sm:h-[14px]" /> پیشنهاد متن
+                   </button>
+                   {formData.suggestion && (
+                     <div className="text-[10px] sm:text-[11px] bg-purple-50 p-2 sm:p-3 rounded-xl border border-purple-100 text-purple-800 break-words">
+                       {formData.suggestion}
+                     </div>
+                   )}
                 </div>
               )}
-              <div className="space-y-1 mt-4"><label className="text-xs text-gray-500 font-medium">اولویت</label><select value={formData.flag || ''} onChange={(e) => setFormData({ ...formData, flag: e.target.value })} className="w-full border border-slate-200 p-3 rounded-xl text-xs bg-white outline-none"><option value="">عادی</option><option value="پیگیری مهم">پیگیری مهم</option><option value="پیگیری فوری">پیگیری فوری</option></select></div>
-              <button type="submit" className="w-full bg-gradient-to-l from-blue-600 to-blue-500 text-white p-3 rounded-xl font-bold hover:shadow-lg hover:shadow-blue-200 transition mt-2 text-sm">ذخیره اطلاعات</button>
+              
+              <div className="space-y-1 mt-3 sm:mt-4">
+                <label className="text-[10px] sm:text-xs text-gray-500 font-medium">اولویت</label>
+                <select 
+                  value={formData.flag || ''} 
+                  onChange={(e) => setFormData({ ...formData, flag: e.target.value })} 
+                  className="w-full border border-slate-200 p-2 sm:p-3 rounded-xl text-xs bg-white outline-none"
+                >
+                  <option value="">عادی</option>
+                  <option value="پیگیری مهم">پیگیری مهم</option>
+                  <option value="پیگیری فوری">پیگیری فوری</option>
+                </select>
+              </div>
+              <button 
+                type="submit" 
+                className="w-full bg-gradient-to-l from-blue-600 to-blue-500 text-white p-2.5 sm:p-3 rounded-xl font-bold hover:shadow-lg hover:shadow-blue-200 transition mt-2 text-xs sm:text-sm"
+              >
+                ذخیره اطلاعات
+              </button>
             </form>
           </div>
         </div>
