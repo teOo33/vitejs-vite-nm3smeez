@@ -256,7 +256,7 @@ export default function App() {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
-  // -------------------- AI Helpers --------------------
+  // -------------------- AI Helpers (همه فیچرهای جدید حفظ شده) --------------------
   const handleSmartAnalysis = async () => {
     if (!formData.desc_text) return alert('لطفاً شرح مشکل را وارد کنید.');
     setAiLoading(true);
@@ -279,6 +279,7 @@ export default function App() {
           ...prev,
           module: parsed.module || '',
           type: parsed.type || '',
+          technical_note: parsed.note || prev.technical_note,
         }));
       } catch (e) {
         console.error('AI Parse Error', e);
@@ -307,7 +308,7 @@ export default function App() {
     if (res) setFormData((prev) => ({ ...prev, title: res.trim() }));
   };
 
-  // -------------------- Save Form --------------------
+  // -------------------- Save Form (فیلدهای حذف‌شده + فیلدهای جدید) --------------------
   const handleSave = async (e) => {
     e.preventDefault();
     const today = new Date().toLocaleDateString('fa-IR');
@@ -315,6 +316,9 @@ export default function App() {
     let payload = {};
 
     if (modalType === 'issue') {
+      // جدول issues باید ستون‌های زیر را داشته باشد:
+      // username, created_at, desc_text, module, type, status, support,
+      // subscription_status, resolved_at, technical_note
       table = 'issues';
       payload = {
         username: formData.username,
@@ -324,8 +328,15 @@ export default function App() {
         type: formData.type,
         status: formData.status || 'باز',
         support: formData.support,
+        subscription_status: formData.subscription_status,
+        resolved_at: formData.resolved_at,
+        technical_note: formData.technical_note,
       };
     } else if (modalType === 'frozen') {
+      // جدول frozen:
+      // username, frozen_at, desc_text, module, cause, status,
+      // subscription_status, first_frozen_at, freeze_count, last_frozen_at,
+      // resolve_status, note
       table = 'frozen';
       payload = {
         username: formData.username,
@@ -334,8 +345,17 @@ export default function App() {
         module: formData.module,
         cause: formData.cause,
         status: formData.status || 'فریز',
+        subscription_status: formData.subscription_status,
+        first_frozen_at: formData.first_frozen_at,
+        freeze_count: formData.freeze_count,
+        last_frozen_at: formData.last_frozen_at,
+        resolve_status: formData.resolve_status,
+        note: formData.note,
       };
     } else if (modalType === 'feature') {
+      // جدول features:
+      // username, created_at, desc_text, title, category, status,
+      // repeat_count, importance, internal_note
       table = 'features';
       payload = {
         username: formData.username,
@@ -344,8 +364,15 @@ export default function App() {
         title: formData.title,
         category: formData.category,
         status: formData.status || 'بررسی نشده',
+        repeat_count: formData.repeat_count,
+        importance: formData.importance,
+        internal_note: formData.internal_note,
       };
     } else if (modalType === 'refund') {
+      // جدول refunds:
+      // username, requested_at, reason, duration, category, action,
+      // suggestion (متن پاسخ پیشنهادی AI - فیچر جدید),
+      // can_return, sales_source, ops_note
       table = 'refunds';
       payload = {
         username: formData.username,
@@ -356,6 +383,8 @@ export default function App() {
         action: formData.action || 'در بررسی',
         suggestion: formData.suggestion,
         can_return: formData.can_return,
+        sales_source: formData.sales_source,
+        ops_note: formData.ops_note,
       };
     }
 
@@ -454,7 +483,24 @@ export default function App() {
                 <div className="font-bold mb-2">
                   {r.desc_text || r.reason || r.title}
                 </div>
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                <div className="flex flex-wrap gap-2 text-[11px] mt-1">
+                  {r.module && (
+                    <span className="bg-gray-100 px-2 py-1 rounded">
+                      ماژول: {r.module}
+                    </span>
+                  )}
+                  {r.type && (
+                    <span className="bg-gray-100 px-2 py-1 rounded">
+                      نوع: {r.type}
+                    </span>
+                  )}
+                  {r.category && (
+                    <span className="bg-gray-100 px-2 py-1 rounded">
+                      دسته: {r.category}
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded absolute left-3 bottom-3">
                   {r.status || r.action}
                 </span>
               </div>
@@ -475,10 +521,10 @@ export default function App() {
   if (appPassword && !isAuthed) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center bg-slate-100"
+        className="min-h-screen flex.items-center justify-center bg-slate-100"
         dir="rtl"
       >
-        <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-sm border border-slate-200">
+        <div className="bg-white.shadow-xl rounded-2xl p-8 w-full max-w-sm border border-slate-200">
           <h1 className="text-xl font-bold mb-4 text-center text-slate-800">
             ورود به داشبورد پشتیبانی وردست
           </h1>
@@ -488,7 +534,7 @@ export default function App() {
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500"
+              className="w-full border border-slate-200 rounded-xl px-3.py-2 text-sm outline-none focus:border-blue-500"
               placeholder="رمز عبور"
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
@@ -551,7 +597,7 @@ export default function App() {
             <button
               key={i.id}
               onClick={() => setActiveTab(i.id)}
-              className={`w-full flex items.CENTER gap-3 p-3 rounded-xl transition-all ${
+              className={`w-full flex.items-center gap-3 p-3 rounded-xl transition-all ${
                 activeTab === i.id
                   ? 'bg-blue-50 text-blue-700 font-bold'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -576,7 +622,7 @@ export default function App() {
       <div className="flex-1 h-full overflow-y-auto p-8 relative bg-gray-50">
         {activeTab === 'dashboard' && (
           <div className="space-y-6 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center">
+            <div className="flex.justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-800">
                 داشبورد مدیریتی
               </h2>
@@ -591,15 +637,15 @@ export default function App() {
                   %{analytics.solvedRatio}
                 </h3>
               </div>
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <span className="text-sm text-gray-500 block.mb-2">
+              <div className="bg-white p-6 rounded-2xl.shadow-sm border border-gray-100">
+                <span className="text-sm text-gray-500 block mb-2">
                   اکانت‌های فریز فعال
                 </span>
                 <h3 className="text-3xl font-bold text-blue-600">
                   {analytics.activeFrozen}
                 </h3>
               </div>
-              <div className="bg.WHITE p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <span className="text-sm text-gray-500 block mb-2">
                   تعداد بازگشت وجه
                 </span>
@@ -672,7 +718,7 @@ export default function App() {
 
         {['issues', 'frozen', 'features', 'refunds'].includes(activeTab) && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 min-h-[70vh] max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center.mb-6">
               <h2 className="font-bold text-xl text-gray-800">لیست داده‌ها</h2>
               <div className="flex gap-3">
                 <button
@@ -688,7 +734,7 @@ export default function App() {
                       activeTab
                     )
                   }
-                  className="border border-gray-200 px-4 py-2 rounded-xl text-sm flex gap-2 items-center hover:bg-gray-50 transition"
+                  className="border border-gray-200 px-4.py-2 rounded-xl text-sm flex gap-2 items-center hover:bg-gray-50 transition"
                 >
                   <Download size={18} /> خروجی اکسل
                 </button>
@@ -710,57 +756,259 @@ export default function App() {
                 </button>
               </div>
             </div>
+
+            {/* جدول‌ها بر اساس تب فعال، ستون‌های کامل شبیه اکسل دارند */}
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-right">
-                <thead className="bg-gray-50 text-gray-600 border-b">
-                  <tr>
-                    <th className="p-4">تاریخ</th>
-                    <th className="p-4">کاربر</th>
-                    <th className="p-4">توضیحات</th>
-                    <th className="p-4">وضعیت</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(activeTab === 'issues'
-                    ? issues
-                    : activeTab === 'frozen'
-                    ? frozen
-                    : activeTab === 'features'
-                    ? features
-                    : refunds
-                  ).map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-b hover:bg-gray-50 transition"
-                    >
-                      <td className="p-4 text-gray-500">
-                        {row.created_at || row.frozen_at || row.requested_at}
-                      </td>
-                      <td className="p-4 font-bold text-gray-800">
-                        {row.username}
-                      </td>
-                      <td
-                        className="p-4 max-w-md truncate text-gray-600"
-                        title={row.desc_text || row.reason || row.title}
-                      >
-                        {row.desc_text || row.reason || row.title}
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            row.status === 'حل‌شده' ||
-                            row.status === 'انجام شد'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {row.status || row.action}
-                        </span>
-                      </td>
+              {activeTab === 'issues' && (
+                <table className="w-full text-sm text-right">
+                  <thead className="bg-gray-50 text-gray-600 border-b">
+                    <tr>
+                      <th className="p-4">تاریخ ثبت</th>
+                      <th className="p-4">نام کاربری</th>
+                      <th className="p-4">وضعیت اشتراک</th>
+                      <th className="p-4">بخش مربوطه (ماژول)</th>
+                      <th className="p-4">نوع مشکل</th>
+                      <th className="p-4">شرح مشکل</th>
+                      <th className="p-4">وضعیت حل</th>
+                      <th className="p-4">تاریخ حل</th>
+                      <th className="p-4">یادداشت فنی</th>
+                      <th className="p-4">پشتیبان</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {issues.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-b hover:bg-gray-50 transition"
+                      >
+                        <td className="p-4 text-gray-500">
+                          {row.created_at}
+                        </td>
+                        <td className="p-4 font-bold text-gray-800">
+                          {row.username}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.subscription_status}
+                        </td>
+                        <td className="p-4 text-gray-600">{row.module}</td>
+                        <td className="p-4 text-gray-600">{row.type}</td>
+                        <td
+                          className="p-4 max-w-xs truncate text-gray-600"
+                          title={row.desc_text}
+                        >
+                          {row.desc_text}
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              row.status === 'حل‌شده'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {row.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.resolved_at}
+                        </td>
+                        <td
+                          className="p-4 max-w-xs truncate text-gray-600"
+                          title={row.technical_note}
+                        >
+                          {row.technical_note}
+                        </td>
+                        <td className="p-4 text-gray-600">{row.support}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {activeTab === 'frozen' && (
+                <table className="w-full text-sm text-right">
+                  <thead className="bg-gray-50 text-gray-600 border-b">
+                    <tr>
+                      <th className="p-4">تاریخ فریز</th>
+                      <th className="p-4">نام کاربری</th>
+                      <th className="p-4">وضعیت اشتراک</th>
+                      <th className="p-4">بخش مربوطه (ماژول)</th>
+                      <th className="p-4">علت اصلی فریز</th>
+                      <th className="p-4">وضعیت فعلی</th>
+                      <th className="p-4">تاریخ اولین فریز</th>
+                      <th className="p-4">تعداد فریز</th>
+                      <th className="p-4">آخرین تاریخ فریز</th>
+                      <th className="p-4">وضعیت رفع مشکل</th>
+                      <th className="p-4">یادداشت / نتیجه نهایی</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {frozen.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-b hover:bg-gray-50 transition"
+                      >
+                        <td className="p-4 text-gray-500">
+                          {row.frozen_at}
+                        </td>
+                        <td className="p-4 font-bold text-gray-800">
+                          {row.username}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.subscription_status}
+                        </td>
+                        <td className="p-4 text-gray-600">{row.module}</td>
+                        <td className="p-4 text-gray-600">{row.cause}</td>
+                        <td className="p-4 text-gray-600">{row.status}</td>
+                        <td className="p-4 text-gray-600">
+                          {row.first_frozen_at}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.freeze_count}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.last_frozen_at}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.resolve_status}
+                        </td>
+                        <td
+                          className="p-4 max-w-xs truncate text-gray-600"
+                          title={row.note}
+                        >
+                          {row.note}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {activeTab === 'features' && (
+                <table className="w-full text-sm text-right">
+                  <thead className="bg-gray-50 text-gray-600 border-b">
+                    <tr>
+                      <th className="p-4">تاریخ ثبت</th>
+                      <th className="p-4">نام کاربری</th>
+                      <th className="p-4">عنوان فیچر</th>
+                      <th className="p-4">شرح درخواست</th>
+                      <th className="p-4">دسته‌بندی</th>
+                      <th className="p-4">تکرار (Auto)</th>
+                      <th className="p-4">اهمیت (Auto)</th>
+                      <th className="p-4">وضعیت بررسی</th>
+                      <th className="p-4">یادداشت داخلی</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {features.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-b hover:bg-gray-50 transition"
+                      >
+                        <td className="p-4 text-gray-500">
+                          {row.created_at}
+                        </td>
+                        <td className="p-4.font-bold text-gray-800">
+                          {row.username}
+                        </td>
+                        <td className="p-4 text-gray-800">{row.title}</td>
+                        <td
+                          className="p-4 max-w-xs truncate text-gray-600"
+                          title={row.desc_text}
+                        >
+                          {row.desc_text}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.category}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.repeat_count}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.importance}
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              row.status === 'انجام شد'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {row.status}
+                          </span>
+                        </td>
+                        <td
+                          className="p-4 max-w-xs truncate text-gray-600"
+                          title={row.internal_note}
+                        >
+                          {row.internal_note}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {activeTab === 'refunds' && (
+                <table className="w-full text-sm text-right">
+                  <thead className="bg-gray-50 text-gray-600 border-b">
+                    <tr>
+                      <th className="p-4">تاریخ درخواست</th>
+                      <th className="p-4">نام کاربری</th>
+                      <th className="p-4">مدت استفاده</th>
+                      <th className="p-4">دلیل اعلام‌شده</th>
+                      <th className="p-4">دسته‌بندی دلیل</th>
+                      <th className="p-4">اقدام انجام‌شده</th>
+                      <th className="p-4">منبع فروش</th>
+                      <th className="p-4">قابلیت بازگشت در آینده</th>
+                      <th className="p-4">پیشنهاد داخلی ساپورت</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {refunds.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-b hover:bg-gray-50 transition"
+                      >
+                        <td className="p-4 text-gray-500">
+                          {row.requested_at}
+                        </td>
+                        <td className="p-4 font-bold text-gray-800">
+                          {row.username}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.duration}
+                        </td>
+                        <td
+                          className="p-4 max-w-xs truncate text-gray-600"
+                          title={row.reason}
+                        >
+                          {row.reason}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.category}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.action}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.sales_source}
+                        </td>
+                        <td className="p-4 text-gray-600">
+                          {row.can_return}
+                        </td>
+                        <td
+                          className="p-4 max-w-xs truncate text-gray-600"
+                          title={row.ops_note}
+                        >
+                          {row.ops_note}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -768,10 +1016,12 @@ export default function App() {
 
       {/* مودال */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-50 p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden.transform transition-all">
-            <div className="p-5 border-b bg-gray-50 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-gray-800">ثبت مورد جدید</h3>
+        <div className="fixed inset-0 bg-black/40 flex.items-center justify-center backdrop-blur-sm z-50 p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+            <div className="p-5 border-b bg-gray-50 flex.justify-between items-center">
+              <h3 className="font-bold text-lg text-gray-800">
+                ثبت مورد جدید
+              </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -796,6 +1046,42 @@ export default function App() {
 
               {modalType === 'issue' && (
                 <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        وضعیت اشتراک
+                      </label>
+                      <select
+                        value={formData.subscription_status || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            subscription_status: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      >
+                        <option value="">انتخاب...</option>
+                        <option value="Active">Active</option>
+                        <option value="Paused">Paused</option>
+                        <option value="Expired">Expired</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">پشتیبان</label>
+                      <input
+                        value={formData.support || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            support: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                  </div>
+
                   <div className="relative space-y-1">
                     <label className="text-xs text-gray-500">شرح مشکل</label>
                     <textarea
@@ -811,7 +1097,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleSmartAnalysis}
-                      className="absolute.bottom-3 left-3 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-3 py-1.5 rounded-lg flex gap-1 items-center transition"
+                      className="absolute bottom-3 left-3 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-3 py-1.5 rounded-lg flex gap-1.items-center transition"
                     >
                       {aiLoading ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -821,6 +1107,7 @@ export default function App() {
                       تحلیل هوشمند
                     </button>
                   </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs text-gray-500">ماژول</label>
@@ -849,7 +1136,9 @@ export default function App() {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-500">نوع مشکل</label>
+                      <label className="text-xs text-gray-500">
+                        نوع مشکل
+                      </label>
                       <select
                         value={formData.type || ''}
                         onChange={(e) =>
@@ -870,64 +1159,106 @@ export default function App() {
                       </select>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        وضعیت حل
+                      </label>
+                      <select
+                        value={formData.status || 'باز'}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            status: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      >
+                        <option value="باز">باز</option>
+                        <option value="در حال بررسی">در حال بررسی</option>
+                        <option value="حل‌شده">حل‌شده</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        تاریخ حل (در صورت وجود)
+                      </label>
+                      <input
+                        placeholder="مثلاً 1404/08/25"
+                        value={formData.resolved_at || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            resolved_at: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
-                    <label className="text-xs text-gray-500">وضعیت</label>
-                    <select
+                    <label className="text-xs text-gray-500">
+                      یادداشت فنی / علت نهایی
+                    </label>
+                    <textarea
+                      rows="2"
+                      value={formData.technical_note || ''}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          status: e.target.value,
+                          technical_note: e.target.value,
                         })
                       }
-                      className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
-                    >
-                      <option value="باز">باز</option>
-                      <option value="در حال بررسی">در حال بررسی</option>
-                      <option value="حل‌شده">حل‌شده</option>
-                    </select>
+                      className="w-full border p-3.rounded-xl text-sm bg-white outline-none"
+                    ></textarea>
                   </div>
                 </>
               )}
 
-              {modalType === 'refund' && (
-                <div className="space-y-3">
-                  <textarea
-                    placeholder="دلیل..."
-                    rows="3"
-                    onChange={(e) =>
-                      setFormData({ ...formData, reason: e.target.value })
-                    }
-                    className="w-full border p-3 rounded-xl"
-                  ></textarea>
-                  <button
-                    type="button"
-                    onClick={handleRefundAI}
-                    className="bg-purple-50 text-purple-600 text-xs w-full py-2 rounded-xl flex justify-center gap-1"
-                  >
-                    <Sparkles size={14} /> پیشنهاد پاسخ
-                  </button>
-                  {formData.suggestion && (
-                    <div className="text-xs bg-purple-50 p-3 rounded-xl border border-purple-100 text-purple-800 leading-relaxed">
-                      {formData.suggestion}
-                    </div>
-                  )}
-                  <input
-                    placeholder="مدت استفاده"
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        duration: e.target.value,
-                      })
-                    }
-                    className="w-full border p-3 rounded-xl"
-                  />
-                </div>
-              )}
-
               {modalType === 'frozen' && (
                 <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        وضعیت اشتراک
+                      </label>
+                      <select
+                        value={formData.subscription_status || ''}
+                       .onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            subscription_status: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      >
+                        <option value="">انتخاب...</option>
+                        <option value="Active">Active</option>
+                        <option value="Paused">Paused</option>
+                        <option value="Expired">Expired</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        ماژول / بخش
+                      </label>
+                      <input
+                        value={formData.module || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            module: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                  </div>
+
                   <input
-                    placeholder="علت فریز"
+                    placeholder="علت اصلی فریز"
                     onChange={(e) =>
                       setFormData({ ...formData, cause: e.target.value })
                     }
@@ -943,6 +1274,111 @@ export default function App() {
                     }
                     className="w-full border p-3 rounded-xl"
                   ></textarea>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        تاریخ اولین فریز
+                      </label>
+                      <input
+                        placeholder="مثلاً 1404/08/10"
+                        value={formData.first_frozen_at || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            first_frozen_at: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        تعداد فریز تا امروز
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.freeze_count || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            freeze_count: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        آخرین تاریخ فریز
+                      </label>
+                      <input
+                        placeholder="مثلاً 1404/08/21"
+                        value={formData.last_frozen_at || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            last_frozen_at: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        وضعیت فعلی
+                      </label>
+                      <select
+                        value={formData.status || 'فریز'}
+                        onChange={(e) =>
+                         .setFormData({
+                            ...formData,
+                            status: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      >
+                        <option value="فریز">فریز</option>
+                        <option value="رفع شده">رفع شده</option>
+                        <option value="در حال بررسی">در حال بررسی</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        وضعیت رفع مشکل
+                      </label>
+                      <input
+                        value={formData.resolve_status || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            resolve_status: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3.rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500">
+                      یادداشت / نتیجه نهایی
+                    </label>
+                    <textarea
+                      rows="2"
+                      value={formData.note || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          note: e.target.value,
+                        })
+                      }
+                      className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                    ></textarea>
+                  </div>
                 </div>
               )}
 
@@ -961,7 +1397,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleFeatureAI}
-                    className="bg-purple-50 text-purple-600 text-xs w-full py-2 rounded-xl flex justify-center gap-1"
+                    className="bg-purple-50 text-purple-600 text-xs w-full py-2 rounded-xl flex.justify-center gap-1"
                   >
                     <Sparkles size={14} /> پیشنهاد عنوان
                   </button>
@@ -976,12 +1412,230 @@ export default function App() {
                     }
                     className="w-full border p-3 rounded-xl"
                   />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        دسته‌بندی درخواست
+                      </label>
+                      <input
+                        value={formData.category || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            category: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        وضعیت بررسی
+                      </label>
+                      <select
+                        value={formData.status || 'بررسی نشده'}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            status: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      >
+                        <option value="بررسی نشده">بررسی نشده</option>
+                        <option value="در تحلیل">در تحلیل</option>
+                        <option value="در توسعه">در توسعه</option>
+                        <option value="انجام شد">انجام شد</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        تکرار (Auto)
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.repeat_count || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            repeat_count: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        اهمیت (Auto)
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.importance || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            importance: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500">
+                      یادداشت داخلی
+                    </label>
+                    <textarea
+                      rows="2"
+                      value={formData.internal_note || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          internal_note: e.target.value,
+                        })
+                      }
+                      className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                    ></textarea>
+                  </div>
+                </div>
+              )}
+
+              {modalType === 'refund' && (
+                <div className="space-y-3">
+                  <textarea
+                    placeholder="دلیل درخواست بازگشت وجه..."
+                    rows="3"
+                    onChange={(e) =>
+                      setFormData({ ...formData, reason: e.target.value })
+                    }
+                    className="w-full border p-3 rounded-xl"
+                  ></textarea>
+                  <button
+                    type="button"
+                    onClick={handleRefundAI}
+                    className="bg-purple-50 text-purple-600 text-xs w-full py-2 rounded-xl flex.justify-center gap-1"
+                  >
+                    <Sparkles size={14} /> پیشنهاد متن پاسخ به کاربر
+                  </button>
+                  {formData.suggestion && (
+                    <div className="text-xs bg-purple-50 p-3 rounded-xl border border-purple-100 text-purple-800 leading-relaxed">
+                      {formData.suggestion}
+                    </div>
+                  )}
+
+                  <input
+                    placeholder="مدت استفاده قبل از درخواست (مثلاً ۷ روز)"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        duration: e.target.value,
+                      })
+                    }
+                    className="w-full border p-3 rounded-xl"
+                  />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        دسته‌بندی دلیل
+                      </label>
+                      <input
+                        value={formData.category || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            category: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        اقدام انجام‌شده
+                      </label>
+                      <select
+                        value={formData.action || 'در بررسی'}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            action: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm.bg-white outline-none"
+                      >
+                        <option value="در بررسی">در بررسی</option>
+                        <option value="بازپرداخت شد">بازپرداخت شد</option>
+                        <option value="رد شد">رد شد</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-500">
+                        منبع فروش
+                      </label>
+                      <input
+                        placeholder="مثلاً پیج، سایت، تماس تلفنی..."
+                        value={formData.sales_source || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            sales_source: e.target.value,
+                          })
+                        }
+                        className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs.text-gray-500">
+                        قابلیت بازگشت در آینده
+                      </label>
+                      <select
+                        value={formData.can_return || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            can_return: e.target.value,
+                          })
+                        }
+                        className="w-full.border p-3 rounded-xl text-sm bg-white outline-none"
+                      >
+                        <option value="">نامشخص</option>
+                        <option value="بله">بله</option>
+                        <option value="خیر">خیر</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500">
+                      پیشنهاد اصلاحی از دید ساپورت
+                    </label>
+                    <textarea
+                      rows="2"
+                      value={formData.ops_note || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          ops_note: e.target.value,
+                        })
+                      }
+                      className="w-full border p-3 rounded-xl text-sm bg-white outline-none"
+                    ></textarea>
+                  </div>
                 </div>
               )}
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white p-3 rounded-xl.font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 mt-2"
+                className="w-full bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 mt-2"
               >
                 ذخیره اطلاعات
               </button>
