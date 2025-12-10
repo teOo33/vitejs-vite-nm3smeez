@@ -508,115 +508,170 @@ export default function App() {
     setIsModalOpen(true);
   };
 
-  // -------------------- User Profile Component --------------------
-  const UserProfile = () => {
-    const [search, setSearch] = useState('');
-    const [suggestions, setSuggestions] = useState([]);
-
-    const allUsers = useMemo(() => {
-      const u = new Set(
-        [...issues, ...frozen, ...features, ...refunds].map((x) => x.username)
-      );
-      return Array.from(u);
-    }, [issues, frozen, features, refunds]);
-
-    const handleSearch = (val) => {
-      setSearch(val);
-      if (val) {
-        setSuggestions(
-          allUsers.filter(
-            (u) => u && u.toLowerCase().includes(val.toLowerCase())
-          )
+    // -------------------- User Profile Component --------------------
+    const UserProfile = () => {
+      const [search, setSearch] = useState('');
+      const [suggestions, setSuggestions] = useState([]);
+  
+      const allUsers = useMemo(() => {
+        const u = new Set(
+          [...issues, ...frozen, ...features, ...refunds].map((x) => x.username)
         );
-      } else {
-        setSuggestions([]);
-      }
-    };
-
-    const allRecords = [
-      ...issues.map((x) => ({ ...x, src: 'issue', date: x.created_at })),
-      ...frozen.map((x) => ({ ...x, src: 'frozen', date: x.frozen_at })),
-      ...features.map((x) => ({ ...x, src: 'feature', date: x.created_at })),
-      ...refunds.map((x) => ({ ...x, src: 'refund', date: x.requested_at })),
-    ].filter((r) => r.username === search);
-
-    return (
-      <div className="w-full">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 max-w-xl ml-auto">
-          <h2 className="font-semibold text-gray-800 mb-3">پروفایل کاربر</h2>
-          <p className="text-xs text-gray-500 mb-3">
-            نام کاربری اینستاگرام / تلگرام را وارد کنید تا سوابق مربوط به آن
-            نمایش داده شود.
-          </p>
-          <div className="relative">
-            <input
-              placeholder="مثلاً @vardast_support"
-              value={search}
-              className="border border-gray-200 p-3 rounded-xl w-full text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-gray-50"
-              onChange={(e) => handleSearch(e.target.value)}
-            />
-            {suggestions.length > 0 && (
-              <div className="absolute top-full right-0 left-0 bg-white shadow-xl rounded-xl mt-1 max-h-48 overflow-auto border border-gray-100 z-50 text-right">
-                {suggestions.map((u) => (
-                  <div
-                    key={u}
-                    onClick={() => {
-                      setSearch(u);
-                      setSuggestions([]);
-                    }}
-                    className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 text-sm"
-                  >
-                    {u}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {search && allRecords.length > 0 ? (
-          <div className="space-y-3 max-w-4xl ml-auto">
-            {allRecords.map((r, i) => (
-              <div
-                key={i}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-right"
-              >
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                  <span>{r.date}</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 border border-gray-100">
-                    {r.src === 'issue'
-                      ? 'مشکل فنی'
-                      : r.src === 'frozen'
-                      ? 'اکانت فریز'
-                      : r.src === 'feature'
-                      ? 'درخواست فیچر'
-                      : 'بازگشت وجه'}
-                  </span>
+        return Array.from(u);
+      }, [issues, frozen, features, refunds]);
+  
+      const handleSearch = (val) => {
+        setSearch(val);
+        if (val) {
+          setSuggestions(
+            allUsers.filter(
+              (u) => u && u.toLowerCase().includes(val.toLowerCase())
+            )
+          );
+        } else {
+          setSuggestions([]);
+        }
+      };
+  
+      const allRecords = [
+        ...issues.map((x) => ({ ...x, src: 'issue', date: x.created_at })),
+        ...frozen.map((x) => ({ ...x, src: 'frozen', date: x.frozen_at })),
+        ...features.map((x) => ({ ...x, src: 'feature', date: x.created_at })),
+        ...refunds.map((x) => ({ ...x, src: 'refund', date: x.requested_at })),
+      ].filter((r) => r.username === search);
+  
+      return (
+        <div className="w-full max-w-5xl ml-auto">
+          {/* جعبه جستجو */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <h2 className="font-semibold text-gray-800 mb-2">پروفایل کاربر</h2>
+            <p className="text-xs text-gray-500 mb-3">
+              نام کاربری اینستاگرام / تلگرام را وارد کنید تا سوابق پشتیبانی و
+              مالی مربوط به او به صورت تایملاین نمایش داده شود.
+            </p>
+            <div className="relative">
+              <input
+                placeholder="مثلاً @vardast_support"
+                value={search}
+                className="border border-gray-200 p-3 rounded-xl w-full text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition bg-gray-50"
+                onChange={(e) => handleSearch(e.target.value)}
+              />
+              {suggestions.length > 0 && (
+                <div className="absolute top-full right-0 left-0 bg-white shadow-xl rounded-xl mt-1 max-h-48 overflow-auto border border-gray-100 z-50 text-right">
+                  {suggestions.map((u) => (
+                    <div
+                      key={u}
+                      onClick={() => {
+                        setSearch(u);
+                        setSuggestions([]);
+                      }}
+                      className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 text-sm"
+                    >
+                      {u}
+                    </div>
+                  ))}
                 </div>
-                <div className="font-semibold text-sm text-gray-800 mb-1">
-                  {r.desc_text || r.reason || r.title}
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                    {r.username}
-                  </span>
-                  <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700">
-                    {r.status || r.action}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          search && (
-            <div className="text-center text-gray-400 text-sm">
-              سابقه‌ای برای این کاربر یافت نشد.
+              )}
             </div>
-          )
-        )}
-      </div>
-    );
-  };
+          </div>
+  
+          {/* تایملاین */}
+          {search && allRecords.length > 0 ? (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="font-semibold text-sm text-slate-800 mb-4 flex items-center gap-2">
+                سوابق کاربر
+                <span className="px-2 py-0.5 text-[11px] rounded-full bg-slate-100 text-slate-600">
+                  {search}
+                </span>
+              </h3>
+  
+              <div className="relative pr-6">
+                {/* خط تایملاین */}
+                <div className="absolute top-2 bottom-2 right-2 w-px bg-slate-200" />
+  
+                <div className="space-y-5">
+                  {allRecords.map((r, i) => (
+                    <div key={i} className="relative flex gap-4 items-start">
+                      {/* نقطه تایملاین */}
+                      <div className="absolute right-0 top-3 w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow" />
+  
+                      <div className="mr-6 flex-1 bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:bg-white hover:shadow-sm transition">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                            <span>{r.date}</span>
+                            <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[10px]">
+                              {r.src === 'issue'
+                                ? 'مشکل فنی'
+                                : r.src === 'frozen'
+                                ? 'اکانت فریز'
+                                : r.src === 'feature'
+                                ? 'درخواست فیچر'
+                                : 'بازگشت وجه'}
+                            </span>
+                            {r.flag && (
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] border ${
+                                  r.flag === 'پیگیری فوری'
+                                    ? 'bg-red-50 text-red-700 border-red-200'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}
+                              >
+                                {r.flag}
+                              </span>
+                            )}
+                          </div>
+  
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openModal(
+                                r.src === 'issue'
+                                  ? 'issue'
+                                  : r.src === 'frozen'
+                                  ? 'frozen'
+                                  : r.src === 'feature'
+                                  ? 'feature'
+                                  : 'refund',
+                                r
+                              )
+                            }
+                            className="text-[11px] px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 bg-white text-slate-700"
+                          >
+                            ویرایش
+                          </button>
+                        </div>
+  
+                        <div className="font-semibold text-sm text-slate-800 mb-1">
+                          {r.desc_text || r.reason || r.title}
+                        </div>
+  
+                        <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-500">
+                          <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200">
+                            وضعیت: {r.status || r.action || 'نامشخص'}
+                          </span>
+                          {r.subscription_status && (
+                            <span className="px-2 py-0.5 rounded-full bg-white border border-slate-200">
+                              اشتراک: {r.subscription_status}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            search && (
+              <div className="text-center text-gray-400 text-sm mt-4">
+                سابقه‌ای برای این کاربر یافت نشد.
+              </div>
+            )
+          )}
+        </div>
+      );
+    };
+  
 
   // =================================================================================
   // 🔐 Login Gate
